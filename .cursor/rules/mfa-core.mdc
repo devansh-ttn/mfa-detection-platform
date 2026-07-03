@@ -1,0 +1,39 @@
+---
+description: MFA platform core conventions — mission, stack, phases, output contract
+alwaysApply: true
+---
+
+# MFA Platform — Core rules
+
+Read **`AGENTS.md`** and **`docs/ROADMAP.md`** before implementing. Default to **POC scope** unless user requests MVP/Production features.
+
+## Architecture
+
+Multi-signal hybrid: **rules → ML ensemble → calibrator → explanation**. LLM is for explanation + RAG only (ADR-001). Score at **URL/page-section** granularity with versioned evidence snapshots.
+
+## Stack
+
+- Python 3.12+ · FastAPI · Playwright crawler · XGBoost/LightGBM
+- Postgres JSONB (signals) · OpenSearch (vectors) · Redis · S3 · AWS primary
+- React + TypeScript (review UI + bot UI)
+- **uv** in `backend/`; **npm** in `frontend/`
+
+## Classification output (required)
+
+Every score must emit: `tier`, `mfa_score`, `confidence`, `top_signals`, `explanation`, `evidence_hash`.
+
+Tiers: `MFA_High` | `MFA_Medium` | `MFA_Low` | `Non_MFA` | `Uncertain`
+
+## Conventions
+
+- Versioned signals: never overwrite `signal_snapshots` without version bump
+- Crawl + LLM off hot path (SQS/ECS workers)
+- HITL override stores `final_label` + `override_reason`; ML score preserved
+- Pin dependencies; justify new deps in change summary
+- No secrets in code; use Secrets Manager / `.env.example`
+
+## Do not
+
+- LLM-only classification · domain-only scoring · homepage-only crawl
+- Trust viewability or IVT as sole MFA signals
+- Skip audit trail on scores, overrides, or RAG answers

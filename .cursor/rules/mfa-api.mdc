@@ -1,0 +1,39 @@
+---
+description: FastAPI ingestion and scoring API conventions
+globs: backend/**/*.py
+alwaysApply: false
+---
+
+# MFA Platform — API rules
+
+## Framework
+
+FastAPI async handlers. OpenAPI docs at `/docs`. Pydantic models for request/response.
+
+## Key endpoints (target)
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| POST | `/api/v1/urls` | Submit URL(s) for scoring |
+| GET | `/api/v1/classifications/{url_id}` | Latest classification |
+| GET | `/api/v1/signals/{url_id}` | Signal snapshots (versioned) |
+| POST | `/api/v1/reviews` | Reviewer override |
+| POST | `/api/v1/chat` | RAG bot query |
+| GET | `/api/v1/blocklist` | Export blocklist segment |
+
+## Patterns
+
+- Ingestion returns `job_id` immediately; crawl/score async via queue
+- Idempotency key: normalized URL hash + `source_batch_id`
+- Pagination on list endpoints; filter by `tier`, `domain`, `confidence`
+- Structured errors: `{ "error": "...", "code": "...", "details": {} }`
+
+## Auth (MVP+)
+
+API Gateway + Cognito/Okta. RBAC middleware before handlers.
+
+## Do not
+
+- Block HTTP on crawl completion (return job status instead)
+- Return raw S3 URLs without signed URL or proxy
+- Expose internal queue message formats in public API

@@ -1,0 +1,47 @@
+---
+description: ML scoring, feature engineering, and classifier conventions
+globs: ml/**/*,backend/**/scoring/**/*,backend/**/ml/**/*
+alwaysApply: false
+---
+
+# MFA Platform — ML & scoring rules
+
+Reference: **`docs/SIGNALS.md`**, **`docs/ADRS.md`** (ADR-001, ADR-002)
+
+## Pipeline order
+
+```
+Rules engine → XGBoost/LightGBM ensemble → Confidence calibrator → Tier mapping
+```
+
+LLM is **not** in the classification path.
+
+## Targets (POC)
+
+- Precision ≥ 85%, Recall ≥ 70% on gold-label set
+- Store SHAP or rule contributions in `top_signals`
+
+## Feature handling
+
+- Missing enrichment → `null` (not 0); document imputation strategy
+- Train/val split by **domain** to prevent leakage
+- Page-level features, not domain aggregates alone
+
+## Tier mapping
+
+| Score band | Tier | Action |
+|------------|------|--------|
+| High confidence + high score | `MFA_High` | block |
+| Medium | `MFA_Medium` | HITL |
+| Low score | `MFA_Low` / `Non_MFA` | monitor / allow |
+| Low confidence | `Uncertain` | HITL |
+
+## Model artifacts
+
+Version models in `ml/artifacts/{version}/` with metadata: training date, feature schema version, metrics.
+
+## Do not
+
+- Use LLM output as classification label
+- Train on industry blocklists as sole ground truth
+- Deploy without shadow-mode evaluation (MVP+)
