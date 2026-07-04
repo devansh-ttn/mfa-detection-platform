@@ -10,22 +10,26 @@ Build a **multi-signal, hybrid ML + LLM system** that ingests ad-inventory URLs,
 
 ## Stack (planned)
 
-| Layer | Technology |
-|-------|------------|
-| API | FastAPI (async), API Gateway, OpenAPI |
-| Crawler | Playwright cluster (dual-persona: direct + referral referrer) |
-| ML | Rules engine + XGBoost/LightGBM ensemble + confidence calibrator |
-| LLM | Bedrock (Claude) or Azure OpenAI — explanations + RAG only, not primary classifier |
-| Signal store | PostgreSQL 16 (JSONB feature vectors) |
-| Vector / search | OpenSearch Serverless (hybrid BM25 + k-NN) |
-| Cache | Redis (hot domain tier + explanation cache) |
-| Artifacts | S3 (screenshots, HTML, parquet) |
-| Orchestration | SQS priority queues, Step Functions (batch), ECS Fargate (crawler workers) |
-| Audit | DynamoDB + S3 Object Lock (immutable trail) |
-| Web | Vite + React + TypeScript (reviewer console + bot UI) |
-| Dashboards | QuickSight (ops metrics) |
-| Cloud | **AWS primary** (Azure/GCP equivalents documented) |
-| Tooling | **uv** (`backend/`), **npm** (`frontend/`) |
+
+| Layer           | Technology                                                                         |
+| --------------- | ---------------------------------------------------------------------------------- |
+| API             | FastAPI (async), API Gateway, OpenAPI                                              |
+| Crawler         | Playwright cluster (dual-persona: direct + referral referrer)                      |
+| ML              | Rules engine + XGBoost/LightGBM ensemble + confidence calibrator                   |
+| LLM             | Bedrock (Claude) or Azure OpenAI — explanations + RAG only, not primary classifier |
+| Signal store    | PostgreSQL 16 (JSONB feature vectors)                                              |
+| Vector / search | OpenSearch Serverless (hybrid BM25 + k-NN)                                         |
+| Cache           | Redis (hot domain tier + explanation cache)                                        |
+| Artifacts       | S3 (screenshots, HTML, parquet)                                                    |
+| Orchestration   | SQS priority queues, Step Functions (batch), ECS Fargate (crawler workers)         |
+| Audit           | DynamoDB + S3 Object Lock (immutable trail)                                        |
+| Web             | Vite + React + TypeScript (reviewer console + bot UI)                              |
+| Dashboards      | QuickSight (ops metrics)                                                           |
+| Cloud           | **AWS primary** (Azure/GCP equivalents documented)                                 |
+| Tooling         | **uv** (`backend/`), **npm** (`frontend/`)                                         |
+
+
+
 
 ## Repository layout (target)
 
@@ -47,7 +51,7 @@ ai-champions-assessment-cursor/
 │   ├── agents/                    # Specialized subagents
 │   └── plans/                     # Implementation plans
 ├── backend/
-│   └── src/mfa/                   # ingestion, scoring, rag, workers
+│   └── src/                       # ingestion, scoring, rag, workers
 ├── crawler/
 │   └── src/                       # Playwright workers, DOM parsers
 ├── ml/
@@ -58,18 +62,22 @@ ai-champions-assessment-cursor/
     └── src/                       # Review UI + Bot UI
 ```
 
+
+
 ## Classification output contract
 
 Every scoring result must include:
 
-| Field | Values / notes |
-|-------|----------------|
-| `tier` | `MFA_High` \| `MFA_Medium` \| `MFA_Low` \| `Non_MFA` \| `Uncertain` |
-| `mfa_score` | Calibrated 0–1 |
-| `confidence` | `high` \| `medium` \| `low` |
-| `top_signals` | Ranked feature contributions (SHAP or rules) |
-| `explanation` | Template or LLM narrative citing only retrieved evidence |
-| `evidence_hash` | Hash of signal snapshot for audit |
+
+| Field           | Values / notes                                                  |
+| --------------- | --------------------------------------------------------------- |
+| `tier`          | `MFA_High` | `MFA_Medium` | `MFA_Low` | `Non_MFA` | `Uncertain` |
+| `mfa_score`     | Calibrated 0–1                                                  |
+| `confidence`    | `high` | `medium` | `low`                                       |
+| `top_signals`   | Ranked feature contributions (SHAP or rules)                    |
+| `explanation`   | Template or LLM narrative citing only retrieved evidence        |
+| `evidence_hash` | Hash of signal snapshot for audit                               |
+
 
 **Action mapping:** High → block; Medium → HITL; Low → monitor; Uncertain → HITL.
 
@@ -85,13 +93,17 @@ Every scoring result must include:
 8. **Subagents:** `.cursor/agents/` — delegate architecture, ML, RAG, crawler, security, UI work
 9. **Plans:** save implementation plans to `.cursor/plans/` or `docs/plans/YYYY-MM-DD-<feature>.md`
 
+
+
 ## Phase scope
 
-| Phase | Duration | Key deliverables |
-|-------|----------|------------------|
-| **POC** | 6–8 weeks | 5K–10K URLs, single-persona crawl, rules + XGBoost, template explanations, Postgres only |
-| **MVP** | +10–12 weeks | Dual-persona crawl, tiered scoring, LLM explanations, RAG v1, review console, OpenSearch, audit v1 |
-| **Production** | +12–16 weeks | Near-real-time path, pre-bid API, auto-retrain, RAG v2, SSO/RBAC, multi-region DR |
+
+| Phase          | Duration     | Key deliverables                                                                                   |
+| -------------- | ------------ | -------------------------------------------------------------------------------------------------- |
+| **POC**        | 6–8 weeks    | 5K–10K URLs, single-persona crawl, rules + XGBoost, template explanations, Postgres only           |
+| **MVP**        | +10–12 weeks | Dual-persona crawl, tiered scoring, LLM explanations, RAG v1, review console, OpenSearch, audit v1 |
+| **Production** | +12–16 weeks | Near-real-time path, pre-bid API, auto-retrain, RAG v2, SSO/RBAC, multi-region DR                  |
+
 
 **Do not implement Production-only features during POC unless explicitly requested.**
 
@@ -104,6 +116,8 @@ Every scoring result must include:
 - **HITL:** Override stores `final_label` + `override_reason`; does not delete ML score
 - **Async workers:** Crawl and LLM calls off the hot API path via SQS/ECS
 
+
+
 ## Security defaults
 
 - LLM context = retrieved JSON evidence only; no open web browsing in MVP
@@ -111,6 +125,8 @@ Every scoring result must include:
 - Tenant isolation; RBAC; PII scrubbing in logs
 - Secrets in AWS Secrets Manager + KMS — never in code
 - Immutable audit log for every score, explanation, and RAG answer
+
+
 
 ## Do not
 
@@ -121,6 +137,8 @@ Every scoring result must include:
 - Skip citation validation in RAG responses
 - Commit `.env`, credentials, or production keys
 - Add dependencies without justification in change summary
+
+
 
 ## Exploration
 

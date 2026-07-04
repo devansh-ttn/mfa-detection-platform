@@ -6,6 +6,8 @@ AI-enabled **Made-For-Advertising (MFA)** detection platform with explainable cl
 
 Architecture approved — pre-implementation. See the full lead architect report in [`.cursor/plans/mfa_platform_architecture_48645023.plan.md`](.cursor/plans/mfa_platform_architecture_48645023.plan.md).
 
+**Seed data:** [`data/seed/`](data/seed/) — 600+ gold-labeled real URLs (MFA + Non-MFA) for POC training and crawler spike.
+
 ## For Cursor AI
 
 | Resource | Purpose |
