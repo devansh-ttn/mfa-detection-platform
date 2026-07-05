@@ -40,3 +40,16 @@ RAG queries → hybrid SQL + OpenSearch retrieval → grounded LLM → citation 
 API Gateway + Cognito · Step Functions + EventBridge · Kinesis → Lambda · ECS Fargate + SQS · RDS PostgreSQL · ElastiCache Redis · OpenSearch Serverless · S3 · Bedrock · DynamoDB audit · Secrets Manager + KMS · WAF + Shield
 
 Full plan: `.cursor/plans/mfa_platform_architecture_48645023.plan.md` Section 8.
+
+## Local runtime (POC)
+
+Docker Compose at the **repository root** (`docker-compose.yml`) — one container per service:
+
+| Service | Image / build | Role |
+|---------|---------------|------|
+| `postgres` | `postgres:16-alpine` | Signal + job store |
+| `backend-api` | `backend/Dockerfile` | FastAPI ingestion API |
+| `crawler-worker` | `crawler/Dockerfile` | Playwright crawl consumer (stub → Phase 3) |
+| `ml-worker` | `ml/Dockerfile` | Rules + XGBoost score consumer (stub → Phase 2) |
+
+Workers use the `workers` Compose profile until crawl/score pipelines are wired.

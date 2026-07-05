@@ -26,7 +26,8 @@ Build a **multi-signal, hybrid ML + LLM system** that ingests ad-inventory URLs,
 | Web             | Vite + React + TypeScript (reviewer console + bot UI)                              |
 | Dashboards      | QuickSight (ops metrics)                                                           |
 | Cloud           | **AWS primary** (Azure/GCP equivalents documented)                                 |
-| Tooling         | **uv** (`backend/`), **npm** (`frontend/`)                                         |
+| Tooling         | **uv** (workspace root) · **npm** (`frontend/`)                                    |
+| Local runtime   | **Docker Compose** at repo root — one container per service                          |
 
 
 
@@ -34,9 +35,14 @@ Build a **multi-signal, hybrid ML + LLM system** that ingests ad-inventory URLs,
 ## Repository layout (target)
 
 ```
-ai-champions-assessment-cursor/
+mfa-detection-platform/
 ├── AGENTS.md                      # This file — agent entry point
 ├── README.md
+├── pyproject.toml                 # uv workspace root
+├── uv.lock                        # Single lockfile for all Python packages
+├── docker-compose.yml             # Local dev — all services (root level)
+├── .env.example                   # Compose env vars (copy to .env)
+├── .dockerignore
 ├── docs/
 │   ├── ARCHITECTURE.md            # System components & data flow
 │   ├── DOMAIN.md                  # MFA terminology & tier taxonomy
@@ -50,16 +56,50 @@ ai-champions-assessment-cursor/
 │   ├── skills/                    # Domain workflow skills
 │   ├── agents/                    # Specialized subagents
 │   └── plans/                     # Implementation plans
+├── common/
+│   ├── pyproject.toml             # mfa-common — shared logging, utilities
+│   └── src/mfa_common/
 ├── backend/
-│   └── src/                       # ingestion, scoring, rag, workers
+│   ├── Dockerfile                 # API + migration entrypoint
+│   ├── docker/entrypoint.sh
+│   └── src/mfa/                   # ingestion, scoring, rag, workers
 ├── crawler/
-│   └── src/                       # Playwright workers, DOM parsers
+│   ├── Dockerfile                 # Playwright crawl worker
+│   └── src/mfa_crawler/           # DOM parsers, crawl consumer
 ├── ml/
-│   └── src/                       # training, calibration, SHAP
+│   ├── Dockerfile                 # Score worker + training CLI
+│   └── src/mfa_ml/                # rules, ensemble, calibration, SHAP
 ├── infra/
 │   └── terraform/                 # AWS resources
 └── frontend/
     └── src/                       # Review UI + Bot UI
+```
+
+## Local development (Docker)
+
+Run the full POC stack from the **repository root**:
+
+```bash
+cp .env.example .env
+docker compose up -d          # postgres + backend-api
+docker compose --profile workers up -d   # + crawler-worker, ml-worker stubs
+```
+
+| Compose service   | Dockerfile            | Port / role                          |
+| ----------------- | --------------------- | ------------------------------------ |
+| `postgres`        | (official image)      | 5432 — signal store                  |
+| `backend-api`     | `backend/Dockerfile`  | 8000 — FastAPI ingestion API         |
+| `crawler-worker`  | `crawler/Dockerfile`  | crawl consumer (POC stub)            |
+| `ml-worker`       | `ml/Dockerfile`       | score consumer (POC stub)            |
+
+Native dev (without Docker): from **repo root**, `uv sync` then Postgres via Compose:
+
+```bash
+uv sync --all-packages          # install all workspace members
+docker compose up -d postgres
+cp backend/.env.example backend/.env
+uv run --directory backend alembic upgrade head
+uv run --directory backend uvicorn mfa.main:app --reload --port 8000
 ```
 
 
@@ -69,14 +109,14 @@ ai-champions-assessment-cursor/
 Every scoring result must include:
 
 
-| Field           | Values / notes                                                  |
-| --------------- | --------------------------------------------------------------- |
-| `tier`          | `MFA_High` | `MFA_Medium` | `MFA_Low` | `Non_MFA` | `Uncertain` |
-| `mfa_score`     | Calibrated 0–1                                                  |
-| `confidence`    | `high` | `medium` | `low`                                       |
-| `top_signals`   | Ranked feature contributions (SHAP or rules)                    |
-| `explanation`   | Template or LLM narrative citing only retrieved evidence        |
-| `evidence_hash` | Hash of signal snapshot for audit                               |
+| Field           | Values / notes                                           |
+| --------------- | -------------------------------------------------------- |
+| `tier`          | `MFA_High`                                               |
+| `mfa_score`     | Calibrated 0–1                                           |
+| `confidence`    | `high`                                                   |
+| `top_signals`   | Ranked feature contributions (SHAP or rules)             |
+| `explanation`   | Template or LLM narrative citing only retrieved evidence |
+| `evidence_hash` | Hash of signal snapshot for audit                        |
 
 
 **Action mapping:** High → block; Medium → HITL; Low → monitor; Uncertain → HITL.
@@ -91,7 +131,7 @@ Every scoring result must include:
 6. **Cursor rules:** `.cursor/rules/mfa-*.mdc` — follow stack and layer conventions
 7. **Skills:** `.cursor/skills/` — use domain workflows for classifier, crawler, RAG, ADRs
 8. **Subagents:** `.cursor/agents/` — delegate architecture, ML, RAG, crawler, security, UI work
-9. **Plans:** save implementation plans to `.cursor/plans/` or `docs/plans/YYYY-MM-DD-<feature>.md`
+9. **Plans:** save implementation plans to `.cursor/plans/` or `docs/plans/YYYY-MM-DD-<feature>.md` — see [`docs/plans/2026-07-05-phased-build-plan.md`](docs/plans/2026-07-05-phased-build-plan.md) for phased task list
 
 
 

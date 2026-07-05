@@ -16,7 +16,8 @@ Multi-signal hybrid: **rules → ML ensemble → calibrator → explanation**. L
 - Python 3.12+ · FastAPI · Playwright crawler · XGBoost/LightGBM
 - Postgres JSONB (signals) · OpenSearch (vectors) · Redis · S3 · AWS primary
 - React + TypeScript (review UI + bot UI)
-- **uv** in `backend/`; **npm** in `frontend/`
+- **uv** workspace at repo root (`pyproject.toml`, `uv.lock`); packages: `backend`, `crawler`, `ml`, `common`
+- **Docker Compose** at repo root — `backend/Dockerfile`, `crawler/Dockerfile`, `ml/Dockerfile`
 
 ## Classification output (required)
 

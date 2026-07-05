@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mfa-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mfa}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mfa}
+      POSTGRES_DB: ${POSTGRES_DB:-mfa}
+    ports:
+      - "5432:5432"
+    volumes:
+      - mfa_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mfa} -d ${POSTGRES_DB:-mfa}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend-api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: mfa-backend-api
+    ports:
+      - "8000:8000"
+    environment:
+      ENV: ${ENV:-poc}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg://mfa:mfa@postgres:5432/mfa}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  crawler-worker:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: crawler/Dockerfile
+    container_name: mfa-crawler-worker
+    environment:
+      ENV: ${ENV:-poc}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend-api:
+        condition: service_started
+    restart: unless-stopped
+
+  ml-worker:
+    profiles: ["workers"]
+    build:
+      context: .
+      dockerfile: ml/Dockerfile
+    container_name: mfa-ml-worker
+    environment:
+      ENV: ${ENV:-poc}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend-api:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  mfa_postgres_data:

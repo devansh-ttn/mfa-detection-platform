@@ -1,0 +1,18 @@
+[project]
+name = "mfa-crawler"
+version = "0.1.0"
+description = "Playwright headless crawler for MFA signal extraction (POC stub)"
+requires-python = ">=3.12"
+dependencies = [
+    "mfa-common",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mfa_crawler"]
+
+[tool.uv.sources]
+mfa-common = { workspace = true }

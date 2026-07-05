@@ -8,7 +8,8 @@ description: Navigates the MFA detection platform architecture, docs, phases, an
 ## Quick start
 
 1. Read `AGENTS.md` for mission, stack, and workflow
-2. Check `docs/ROADMAP.md` for current phase scope
+2. Local stack: `docker compose up -d` from **repo root** (`docker-compose.yml`)
+3. Check `docs/ROADMAP.md` for current phase scope
 3. Read layer-specific docs before coding:
    - Architecture → `docs/ARCHITECTURE.md`
    - Domain terms → `docs/DOMAIN.md`
@@ -34,6 +35,7 @@ Flag scope creep: "This is an MVP feature — confirm before implementing."
 | Ingestion/API | `backend/src/mfa/` | `mfa-api.mdc` | — |
 | Crawler | `crawler/src/` | `mfa-crawler.mdc` | `mfa-crawler-engineer` |
 | ML/Scoring | `ml/src/` | `mfa-ml-scoring.mdc` | `mfa-ml-engineer` |
+| Shared | `common/src/mfa_common/` | `mfa-core.mdc` | — |
 | RAG | `backend/src/mfa/rag/` | `mfa-rag.mdc` | `mfa-rag-engineer` |
 | Infra | `infra/terraform/` | `mfa-infra-aws.mdc` | — |
 | UI | `frontend/src/` | `mfa-review-ui.mdc` | `mfa-review-ui-engineer` |

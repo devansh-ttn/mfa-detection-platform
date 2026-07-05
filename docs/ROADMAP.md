@@ -22,6 +22,8 @@
 
 Unless the user specifies otherwise, implement **POC scope** first. Reference `.cursor/plans/mfa_platform_architecture_48645023.plan.md` for full detail.
 
+**Task breakdown:** [`docs/plans/2026-07-05-phased-build-plan.md`](plans/2026-07-05-phased-build-plan.md) — phased tasks with IDs, dependencies, and acceptance criteria.
+
 ## Open plan todos
 
 1. Validate gold-label URL dataset with Ad Ops

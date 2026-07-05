@@ -8,7 +8,18 @@ alwaysApply: false
 
 Reference: **`docs/ARCHITECTURE.md`**, plan Section 8
 
-## Primary services
+## Local development
+
+Docker Compose at **repo root** (`docker-compose.yml`) mirrors production service boundaries:
+
+| Compose service | Production target |
+| --------------- | ----------------- |
+| `backend-api` | ECS Fargate / API Gateway |
+| `crawler-worker` | ECS Fargate crawl fleet |
+| `ml-worker` | ECS Fargate scoring workers |
+| `postgres` | RDS PostgreSQL 16 |
+
+Each app service has its own `Dockerfile` under `backend/`, `crawler/`, or `ml/`.
 
 | Capability | AWS |
 |------------|-----|

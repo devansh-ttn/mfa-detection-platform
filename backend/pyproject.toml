@@ -1,0 +1,42 @@
+[project]
+name = "mfa-backend"
+version = "0.1.0"
+description = "MFA detection platform API — ingestion, scoring, RAG"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic-settings>=2.6",
+    "sqlalchemy[asyncio]>=2.0",
+    "asyncpg>=0.30",
+    "alembic>=1.14",
+    "httpx>=0.28",
+    "psycopg[binary]>=3.2",
+    "mfa-common",
+    "mfa-ml",
+    "mfa-crawler",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mfa"]
+
+[tool.uv.sources]
+mfa-common = { workspace = true }
+mfa-ml = { workspace = true }
+mfa-crawler = { workspace = true }
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

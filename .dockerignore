@@ -1,0 +1,15 @@
+.git
+.github
+.cursor
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.mypy_cache
+**/*.pyc
+**/.DS_Store
+data/
+frontend/node_modules
+infra/terraform/.terraform
+.env
+backend/.env
