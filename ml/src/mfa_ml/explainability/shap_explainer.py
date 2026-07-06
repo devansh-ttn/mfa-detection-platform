@@ -1,18 +1,18 @@
-"""SHAP-based signal attribution using XGBoost's native pred_contribs.
+"""SHAP-based signal attribution using the external shap library.
 
-Uses ``model.get_booster().predict(dmatrix, pred_contribs=True)`` which
-computes exact TreeSHAP values entirely within XGBoost — no external
-``shap`` package required (avoids the numba/llvmlite dependency chain).
+Uses ``shap.TreeExplainer`` which calls XGBoost's C++ TreeSHAP kernel
+natively — fast, exact, and consistent with ``pred_contribs=True``.
 
 Positive SHAP → evidence of MFA.
 Negative SHAP → evidence of Non_MFA.
 
-The final column in ``pred_contribs`` is the base value (expected model
-output) which is excluded from the feature contributions.
+For binary XGBoost classifiers, ``TreeExplainer.shap_values`` returns:
+- shap >= 0.40: single 2-D array, shape (n_samples, n_features)
+- shap < 0.40 (legacy): list of two 2-D arrays; index 1 = P(MFA)
+
+Both layouts are handled transparently.
 
 See docs/SIGNALS.md for feature definitions.
-TODO(MVP): Migrate to the external ``shap`` library once it drops the hard
-numba dependency and supports Python 3.14+.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from __future__ import annotations
 from typing import Any
 
 import numpy as np
+import shap
 import xgboost as xgb
 
 from mfa_ml.scoring.output import SignalContribution
@@ -29,7 +30,7 @@ TOP_K = 5
 
 
 class SHAPExplainer:
-    """TreeSHAP explainer using XGBoost's native pred_contribs.
+    """TreeSHAP explainer for MFA XGBoost models.
 
     Args:
         model: Trained ``xgb.XGBClassifier`` instance.
@@ -42,18 +43,29 @@ class SHAPExplainer:
         model: xgb.XGBClassifier,
         feature_names: list[str],
     ) -> None:
-        self._booster: xgb.Booster = model.get_booster()
+        self._explainer = shap.TreeExplainer(model)
         self.feature_names = feature_names
 
-    def _to_dmatrix(self, feature_dict: dict[str, Any]) -> xgb.DMatrix:
-        row = np.array(
+    def _to_array(self, feature_dict: dict[str, Any]) -> np.ndarray:
+        return np.array(
             [
                 SENTINEL_NULL if (v := feature_dict.get(name)) is None else float(v)
                 for name in self.feature_names
             ],
             dtype=np.float32,
         ).reshape(1, -1)
-        return xgb.DMatrix(row, feature_names=self.feature_names)
+
+    def _extract_values(self, shap_output: Any) -> np.ndarray:
+        """Normalise shap_values output across library versions.
+
+        Returns a 1-D array of SHAP values for the positive (MFA) class.
+        """
+        if isinstance(shap_output, list):
+            return np.asarray(shap_output[1][0])
+        arr = np.asarray(shap_output)
+        if arr.ndim == 1:
+            return arr
+        return arr[0]
 
     def explain(
         self,
@@ -68,9 +80,9 @@ class SHAPExplainer:
             List of up to 5 ``SignalContribution`` objects, ranked 1–5 by
             descending ``|contribution|``.
         """
-        dmatrix = self._to_dmatrix(feature_dict)
-        contribs_matrix = self._booster.predict(dmatrix, pred_contribs=True)
-        values = contribs_matrix[0, :-1]
+        X = self._to_array(feature_dict)
+        raw = self._explainer.shap_values(X)
+        values = self._extract_values(raw)
 
         indexed = sorted(enumerate(values), key=lambda x: abs(x[1]), reverse=True)
         top_k = indexed[:TOP_K]
@@ -78,11 +90,10 @@ class SHAPExplainer:
         contributions: list[SignalContribution] = []
         for rank, (idx, shap_val) in enumerate(top_k, start=1):
             name = self.feature_names[idx]
-            raw_val = feature_dict.get(name)
             contributions.append(
                 SignalContribution(
                     feature=name,
-                    value=raw_val,
+                    value=feature_dict.get(name),
                     contribution=round(float(shap_val), 4),
                     rank=rank,
                 )
@@ -114,12 +125,18 @@ class SHAPExplainer:
             ],
             dtype=np.float32,
         )
-        dmatrix = xgb.DMatrix(rows, feature_names=self.feature_names)
-        contribs_matrix = self._booster.predict(dmatrix, pred_contribs=True)
+        raw = self._explainer.shap_values(rows)
+
+        if isinstance(raw, list):
+            all_values = np.asarray(raw[1])
+        else:
+            all_values = np.asarray(raw)
+        if all_values.ndim == 1:
+            all_values = all_values.reshape(1, -1)
 
         results: list[list[SignalContribution]] = []
         for i, fd in enumerate(feature_dicts):
-            values = contribs_matrix[i, :-1]
+            values = all_values[i]
             indexed = sorted(enumerate(values), key=lambda x: abs(x[1]), reverse=True)
             top_k = indexed[:TOP_K]
             contributions: list[SignalContribution] = []
