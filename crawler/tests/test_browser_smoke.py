@@ -18,7 +18,9 @@ pytestmark = pytest.mark.integration
 async def test_crawl_example_com() -> None:
     from mfa_crawler.crawl import crawl_url
 
-    payload, duration_sec = await crawl_url("https://example.com")
+    result = await crawl_url("https://example.com")
+    payload = result.payload
+    duration_sec = result.duration_sec
     doc = payload.to_db()
 
     assert doc["schema_version"] == SIGNAL_SCHEMA_VERSION

@@ -15,8 +15,8 @@ description: Builds the Playwright crawler for ad density, refresh detection, an
 - [ ] Select 100 known MFA + non-MFA domains (gold labels / domains_summary.csv)
 - [ ] Implement direct-persona crawl (referral persona: TODO(MVP))
 - [ ] Dwell + refresh listener (60s target; null until wired — see SIGNALS.md)
-- [ ] Extract DOM metrics → SignalFeatures → signal_snapshots JSONB
-- [ ] Capture screenshot + HTML to evidence path (S3: TODO(MVP))
+- [x] Extract DOM metrics → SignalFeatures → signal_snapshots JSONB
+- [x] Capture screenshot + HTML to evidence path (S3: TODO(MVP))
 - [ ] Report: ad density distribution, refresh rate, precision lift vs baseline
 ```
 
@@ -40,9 +40,7 @@ Wrap in `SignalSnapshotPayload` with `schema_version: v1` and `crawl_ts`.
 
 ## Worker deployment
 
-Queue message → worker → write `signal_snapshot` → enqueue scoring job
-
-> **TODO(MVP):** Replace in-memory queue with SQS; ECS Fargate workers.
+Queue message → worker polls Postgres → write `signal_snapshot` → enqueue scoring job (TODO: POC-4)
 
 ## Legal / ethics
 

@@ -1,6 +1,6 @@
 ---
 name: POC-2.1 Playwright Crawler
-overview: Verify baseline phases are complete, then implement Playwright in mfa-crawler with Docker browser support, a DOM metrics extractor for five core crawl features, and a crawl path that produces validated SignalSnapshotPayload objects using production-oriented naming (SignalFeatures, schema_version v1). DB persist deferred to POC-2.3.
+overview: "SUPERSEDED — POC-2.1–2.6 complete. See crawler/README.md and docs/plans/2026-07-05-phased-build-plan.md."
 todos:
   - id: verify-phases
     content: Run backend pytest + validate_gold_labels.py to confirm P0/POC-1 baseline

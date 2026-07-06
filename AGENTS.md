@@ -82,14 +82,14 @@ Run the full local stack from the **repository root**:
 ```bash
 cp .env.example .env
 docker compose up -d          # postgres + backend-api
-docker compose --profile workers up -d   # + crawler-worker, ml-worker stubs
+docker compose --profile workers up -d   # + crawler-worker, ml-worker
 ```
 
 | Compose service   | Dockerfile            | Port / role                          |
 | ----------------- | --------------------- | ------------------------------------ |
 | `postgres`        | (official image)      | 5432 — signal store                  |
 | `backend-api`     | `backend/Dockerfile`  | 8000 — FastAPI (ingestion, jobs, signals) |
-| `crawler-worker`  | `crawler/Dockerfile`  | crawl consumer (stub)                |
+| `crawler-worker`  | `crawler/Dockerfile`  | Postgres job poll → crawl → signal_snapshots |
 | `ml-worker`       | `ml/Dockerfile`       | score consumer (stub)                |
 
 Default app env: `ENV=local`. Docker Compose uses the **repo root** `.env`; native backend dev uses `backend/.env` (localhost vs `postgres` hostname). See root `README.md` § Environment files.

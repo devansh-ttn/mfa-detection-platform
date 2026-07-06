@@ -25,9 +25,9 @@ Client                    Backend API                 Postgres
   | <----------------------- |                          |
 ```
 
-1. **Ingest** — `POST /api/v1/urls` normalizes each URL, deduplicates via `url_hash` + `source_batch_id`, creates a `crawl_jobs` row (`status=queued`), and enqueues an in-memory message (durable queue comes later).
-2. **Poll** — `GET /api/v1/jobs/{job_id}` returns job status.
-3. **Signals** — `GET /api/v1/signals/{url_id}` returns versioned `signal_snapshots` JSONB (populated by the crawler worker in a later milestone).
+1. **Ingest** — `POST /api/v1/urls` normalizes each URL, deduplicates via `url_hash` + `source_batch_id`, creates a `crawl_jobs` row (`status=queued`). Worker consumes via Postgres poll (`job_poll.py`).
+2. **Poll** — `GET /api/v1/jobs/{job_id}` returns job status (`queued` → `running` → `completed`/`failed`).
+3. **Signals** — `GET /api/v1/signals/{url_id}` returns versioned `signal_snapshots` JSONB (written by `crawler-worker` after each crawl).
 
 ## Key packages
 
@@ -36,7 +36,7 @@ Client                    Backend API                 Postgres
 | `src/mfa/main.py` | FastAPI app, health checks |
 | `src/mfa/api/v1/urls.py` | Ingestion + job status |
 | `src/mfa/api/v1/signals.py` | Signal snapshot reads |
-| `src/mfa/ingestion/` | URL normalizer, idempotency, queue stub |
+| `src/mfa/ingestion/` | URL normalizer, idempotency, `job_poll.py` (Postgres worker queue) |
 | `src/mfa/schemas/signals.py` | **`SignalFeatures`**, **`SignalSnapshotPayload`** — canonical signal JSON schema |
 | `src/mfa/db/` | SQLAlchemy models + async session |
 | `alembic/` | Database migrations |
@@ -96,8 +96,8 @@ Copy `backend/.env.example` → `backend/.env` for native dev. The Docker path u
 
 ## What's next
 
-- Crawler worker writes `signal_snapshots` after crawl (POC-2.3)
-- Durable job queue (Redis/SQS) replaces in-memory enqueue
+- ML scoring worker (`classifications` rows)
+- Durable job queue (Redis/SQS) — POC-4.1
 - Classifications API + audit events
 
 ## Related docs
