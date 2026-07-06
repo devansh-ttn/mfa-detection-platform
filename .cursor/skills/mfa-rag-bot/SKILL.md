@@ -50,4 +50,4 @@ class RAGResponse(BaseModel):
 
 ## MVP scope
 
-SQL + vector over signals, policies, classifications. Defer similar-domain search to v2.
+> **TODO(MVP):** SQL + vector over signals, policies, classifications. Similar-domain search deferred to Production (RAG v2).

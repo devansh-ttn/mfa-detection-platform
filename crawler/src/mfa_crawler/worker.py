@@ -1,4 +1,7 @@
-"""POC stub — crawl queue consumer (Phase 3: Playwright integration)."""
+"""Crawl queue consumer — Playwright integration pending.
+
+TODO: Wire Playwright crawl, DOM parser, and signal_snapshots persistence (docs/plans).
+"""
 
 from __future__ import annotations
 
@@ -23,7 +26,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
 
-    logger.info("crawler_worker_stub_ready", env=os.getenv("ENV", "poc"))
+    logger.info("crawler_worker_stub_ready", env=os.getenv("ENV", "local"))
 
     while True:
         time.sleep(30)

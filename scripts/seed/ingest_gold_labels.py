@@ -267,6 +267,9 @@ def main() -> int:
             f"duplicate={result.get('duplicate', 0)} "
             f"invalid={len(result.get('invalid', []))}"
         )
+        for job in result.get("jobs", []):
+            status = "duplicate" if job.get("duplicate") else "accepted"
+            print(f"    job_id={job.get('job_id')} url_id={job.get('url_id')} ({status})")
         for invalid in result.get("invalid", []):
             print(f"    invalid: {invalid}")
 

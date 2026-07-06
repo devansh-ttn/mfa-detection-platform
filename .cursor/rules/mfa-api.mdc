@@ -10,16 +10,19 @@ alwaysApply: false
 
 FastAPI async handlers. OpenAPI docs at `/docs`. Pydantic models for request/response.
 
-## Key endpoints (target)
+## Key endpoints
 
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/api/v1/urls` | Submit URL(s) for scoring |
-| GET | `/api/v1/classifications/{url_id}` | Latest classification |
-| GET | `/api/v1/signals/{url_id}` | Signal snapshots (versioned) |
-| POST | `/api/v1/reviews` | Reviewer override |
-| POST | `/api/v1/chat` | RAG bot query |
-| GET | `/api/v1/blocklist` | Export blocklist segment |
+| Method | Path | Status | Purpose |
+|--------|------|--------|---------|
+| POST | `/api/v1/urls` | implemented | Submit URL(s) for scoring |
+| GET | `/api/v1/jobs/{job_id}` | implemented | Crawl job status |
+| GET | `/api/v1/signals/{url_id}` | implemented | Signal snapshots (versioned, paginated) |
+| GET | `/api/v1/classifications/{url_id}` | planned | Latest classification |
+| POST | `/api/v1/reviews` | planned | Reviewer override |
+| POST | `/api/v1/chat` | planned | RAG bot query |
+| GET | `/api/v1/blocklist` | planned | Export blocklist segment |
+
+> Planned endpoints: check `docs/ROADMAP.md` before implementing.
 
 ## Patterns
 
@@ -28,9 +31,9 @@ FastAPI async handlers. OpenAPI docs at `/docs`. Pydantic models for request/res
 - Pagination on list endpoints; filter by `tier`, `domain`, `confidence`
 - Structured errors: `{ "error": "...", "code": "...", "details": {} }`
 
-## Auth (MVP+)
+## Auth
 
-API Gateway + Cognito/Okta. RBAC middleware before handlers.
+> **TODO(MVP):** API Gateway + Cognito/Okta. RBAC middleware before handlers.
 
 ## Do not
 

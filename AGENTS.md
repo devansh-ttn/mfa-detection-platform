@@ -49,7 +49,7 @@ mfa-detection-platform/
 │   ├── ADRS.md                    # Architecture decision records
 │   ├── SIGNALS.md                 # Feature schema (~40–60 features)
 │   ├── RAG.md                     # RAG bot design & response contract
-│   ├── ROADMAP.md                 # POC → MVP → Production phases
+│   ├── ROADMAP.md                 # Milestone scope (Baseline → MVP → Production)
 │   └── GUARDRAILS.md              # Risk controls & compliance defaults
 ├── .cursor/
 │   ├── rules/                     # mfa-*.mdc project rules
@@ -77,7 +77,7 @@ mfa-detection-platform/
 
 ## Local development (Docker)
 
-Run the full POC stack from the **repository root**:
+Run the full local stack from the **repository root**:
 
 ```bash
 cp .env.example .env
@@ -88,9 +88,11 @@ docker compose --profile workers up -d   # + crawler-worker, ml-worker stubs
 | Compose service   | Dockerfile            | Port / role                          |
 | ----------------- | --------------------- | ------------------------------------ |
 | `postgres`        | (official image)      | 5432 — signal store                  |
-| `backend-api`     | `backend/Dockerfile`  | 8000 — FastAPI ingestion API         |
-| `crawler-worker`  | `crawler/Dockerfile`  | crawl consumer (POC stub)            |
-| `ml-worker`       | `ml/Dockerfile`       | score consumer (POC stub)            |
+| `backend-api`     | `backend/Dockerfile`  | 8000 — FastAPI (ingestion, jobs, signals) |
+| `crawler-worker`  | `crawler/Dockerfile`  | crawl consumer (stub)                |
+| `ml-worker`       | `ml/Dockerfile`       | score consumer (stub)                |
+
+Default app env: `ENV=local`. Docker Compose uses the **repo root** `.env`; native backend dev uses `backend/.env` (localhost vs `postgres` hostname). See root `README.md` § Environment files.
 
 Native dev (without Docker): from **repo root**, `uv sync` then Postgres via Compose:
 
@@ -108,22 +110,34 @@ uv run --directory backend uvicorn mfa.main:app --reload --port 8000
 
 Every scoring result must include:
 
-
 | Field           | Values / notes                                           |
 | --------------- | -------------------------------------------------------- |
-| `tier`          | `MFA_High`                                               |
+| `tier`          | `MFA_High` \| `MFA_Medium` \| `MFA_Low` \| `Non_MFA` \| `Uncertain` |
 | `mfa_score`     | Calibrated 0–1                                           |
-| `confidence`    | `high`                                                   |
+| `confidence`    | `high` \| `medium` \| `low`                              |
 | `top_signals`   | Ranked feature contributions (SHAP or rules)             |
 | `explanation`   | Template or LLM narrative citing only retrieved evidence |
 | `evidence_hash` | Hash of signal snapshot for audit                        |
 
-
 **Action mapping:** High → block; Medium → HITL; Low → monitor; Uncertain → HITL.
+
+## Implementation naming
+
+Use **production-oriented names** in code — milestone scope lives in `docs/ROADMAP.md`, not in identifiers.
+
+| Use | Avoid |
+|-----|-------|
+| `SignalFeatures`, `SignalSnapshotPayload` | `POCFeatureSignals`, `Mvp*` prefixes |
+| `schema_version: v1` | `poc-v1` in new writes |
+| `CRAWL_FEATURE_NAMES`, `ENRICHMENT_FEATURE_NAMES` | `POC_FEATURE_NAMES` |
+| `TODO(MVP):` / `TODO(Production):` comments | Phase names in class/module names |
+| `ENV=local` | `ENV=poc` |
+
+Canonical schema: `backend/src/mfa/schemas/signals.py` · `docs/SIGNALS.md`
 
 ## Agent workflow
 
-1. **Read first:** `docs/ARCHITECTURE.md`, `docs/DOMAIN.md`, `docs/ROADMAP.md` — know current phase scope
+1. **Read first:** `docs/ARCHITECTURE.md`, `docs/DOMAIN.md`, `docs/ROADMAP.md` — know current milestone scope
 2. **ADRs:** `docs/ADRS.md` before changing model, vector store, or orchestration choices
 3. **Signals:** `docs/SIGNALS.md` before adding/changing feature schema
 4. **RAG:** `docs/RAG.md` before bot or retrieval changes
@@ -135,23 +149,23 @@ Every scoring result must include:
 
 
 
-## Phase scope
+## Milestone scope (planning only)
 
+Roadmap phases define **what to build when** — not how to name code. See `docs/plans/2026-07-05-phased-build-plan.md` for task IDs.
 
-| Phase          | Duration     | Key deliverables                                                                                   |
+| Milestone      | Duration     | Key deliverables                                                                                   |
 | -------------- | ------------ | -------------------------------------------------------------------------------------------------- |
-| **POC**        | 6–8 weeks    | 5K–10K URLs, single-persona crawl, rules + XGBoost, template explanations, Postgres only           |
-| **MVP**        | +10–12 weeks | Dual-persona crawl, tiered scoring, LLM explanations, RAG v1, review console, OpenSearch, audit v1 |
-| **Production** | +12–16 weeks | Near-real-time path, pre-bid API, auto-retrain, RAG v2, SSO/RBAC, multi-region DR                  |
+| **Baseline**   | 6–8 weeks    | Single-persona crawl, rules + XGBoost, template explanations, Postgres, ingestion + signals API   |
+| **MVP**        | +10–12 weeks | Dual-persona crawl, LLM explanations, RAG v1, review console, OpenSearch, Redis, audit v1           |
+| **Production** | +12–16 weeks | Near-real-time path, pre-bid API, auto-retrain, RAG v2, SSO/RBAC, multi-region DR                |
 
-
-**Do not implement Production-only features during POC unless explicitly requested.**
+**Do not implement Production-only features unless explicitly requested.** Check `docs/ROADMAP.md` before adding MVP/Production capabilities.
 
 ## Patterns
 
 - **Retrieve-first RAG:** No generation without evidence pack; citation validator on every claim
 - **LLM scope:** Explanation + RAG only — never primary MFA classifier (ADR-001)
-- **Dual-persona crawl:** Direct navigation + simulated Outbrain/Taboola referrer; 60s dwell for refresh
+- **Dual-persona crawl:** Direct + simulated Outbrain/Taboola referrer; 60s dwell — TODO(MVP) for referral persona
 - **Versioned signals:** `signals_v{n}` per `url_id`; never overwrite without version bump
 - **HITL:** Override stores `final_label` + `override_reason`; does not delete ML score
 - **Async workers:** Crawl and LLM calls off the hot API path via SQS/ECS
@@ -160,7 +174,7 @@ Every scoring result must include:
 
 ## Security defaults
 
-- LLM context = retrieved JSON evidence only; no open web browsing in MVP
+- LLM context = retrieved JSON evidence only; no open web browsing until MVP RAG ships
 - Input sanitizer on RAG queries; tool calls whitelisted
 - Tenant isolation; RBAC; PII scrubbing in logs
 - Secrets in AWS Secrets Manager + KMS — never in code

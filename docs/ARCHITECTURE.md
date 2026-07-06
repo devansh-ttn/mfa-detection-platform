@@ -41,7 +41,7 @@ API Gateway + Cognito · Step Functions + EventBridge · Kinesis → Lambda · E
 
 Full plan: `.cursor/plans/mfa_platform_architecture_48645023.plan.md` Section 8.
 
-## Local runtime (POC)
+## Local runtime
 
 Docker Compose at the **repository root** (`docker-compose.yml`) — one container per service:
 
@@ -49,7 +49,7 @@ Docker Compose at the **repository root** (`docker-compose.yml`) — one contain
 |---------|---------------|------|
 | `postgres` | `postgres:16-alpine` | Signal + job store |
 | `backend-api` | `backend/Dockerfile` | FastAPI ingestion API |
-| `crawler-worker` | `crawler/Dockerfile` | Playwright crawl consumer (stub → Phase 3) |
-| `ml-worker` | `ml/Dockerfile` | Rules + XGBoost score consumer (stub → Phase 2) |
+| `crawler-worker` | `crawler/Dockerfile` | Playwright crawl consumer (stub) |
+| `ml-worker` | `ml/Dockerfile` | Rules + classifier score consumer (stub) |
 
 Workers use the `workers` Compose profile until crawl/score pipelines are wired.

@@ -14,7 +14,6 @@ dependencies = [
     "psycopg[binary]>=3.2",
     "mfa-common",
     "mfa-ml",
-    "mfa-crawler",
 ]
 
 [build-system]
@@ -27,7 +26,6 @@ packages = ["src/mfa"]
 [tool.uv.sources]
 mfa-common = { workspace = true }
 mfa-ml = { workspace = true }
-mfa-crawler = { workspace = true }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"

@@ -1,10 +1,12 @@
 [project]
 name = "mfa-crawler"
 version = "0.1.0"
-description = "Playwright headless crawler for MFA signal extraction (POC stub)"
+description = "Playwright headless crawler for MFA signal extraction"
 requires-python = ">=3.12"
 dependencies = [
     "mfa-common",
+    "mfa-backend",
+    "playwright>=1.49",
 ]
 
 [build-system]
@@ -16,3 +18,19 @@ packages = ["src/mfa_crawler"]
 
 [tool.uv.sources]
 mfa-common = { workspace = true }
+mfa-backend = { workspace = true }
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "integration: tests that launch a real browser (set PLAYWRIGHT_SMOKE=1)",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]

@@ -16,9 +16,9 @@ Rules engine → XGBoost/LightGBM ensemble → Confidence calibrator → Tier ma
 
 LLM is **not** in the classification path.
 
-## Targets (POC)
+## Classifier targets (baseline milestone)
 
-- Precision ≥ 85%, Recall ≥ 70% on gold-label set
+- Precision ≥ 85%, Recall ≥ 70% on gold-label set (see `docs/ROADMAP.md`)
 - Store SHAP or rule contributions in `top_signals`
 
 ## Feature handling
@@ -44,4 +44,4 @@ Version models in `ml/artifacts/{version}/` with metadata: training date, featur
 
 - Use LLM output as classification label
 - Train on industry blocklists as sole ground truth
-- Deploy without shadow-mode evaluation (MVP+)
+- Deploy without shadow-mode evaluation — TODO(MVP); see `docs/ROADMAP.md`

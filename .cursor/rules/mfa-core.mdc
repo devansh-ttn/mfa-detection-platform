@@ -5,7 +5,15 @@ alwaysApply: true
 
 # MFA Platform — Core rules
 
-Read **`AGENTS.md`** and **`docs/ROADMAP.md`** before implementing. Default to **POC scope** unless user requests MVP/Production features.
+Read **`AGENTS.md`** and **`docs/ROADMAP.md`** before implementing. Gate feature scope via the roadmap and build plan — not via POC/MVP prefixes in code.
+
+## Implementation naming
+
+- Use **production-oriented names** in code (`SignalFeatures`, `SignalSnapshotPayload`, `schema_version: v1`)
+- Do **not** prefix classes, modules, or constants with `POC`, `Mvp`, etc.
+- Mark deferred work with **`TODO(scope):`** comments (e.g. `TODO(MVP):`, `TODO(Production):`) pointing to `docs/ROADMAP.md` or `docs/plans/`
+- Local runtime env: `ENV=local` (not phase labels)
+- Canonical schema: `backend/src/mfa/schemas/signals.py`, `docs/SIGNALS.md`
 
 ## Architecture
 

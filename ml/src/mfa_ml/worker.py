@@ -1,4 +1,7 @@
-"""POC stub — score queue consumer (Phase 2: rules + XGBoost integration)."""
+"""Score queue consumer — rules + classifier integration pending.
+
+TODO: Wire rules engine, XGBoost scorer, and classifications writer (docs/plans).
+"""
 
 from __future__ import annotations
 
@@ -23,7 +26,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _shutdown)
     signal.signal(signal.SIGINT, _shutdown)
 
-    logger.info("ml_worker_stub_ready", env=os.getenv("ENV", "poc"))
+    logger.info("ml_worker_stub_ready", env=os.getenv("ENV", "local"))
 
     while True:
         time.sleep(30)

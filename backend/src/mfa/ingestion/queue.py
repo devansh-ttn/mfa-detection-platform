@@ -16,7 +16,10 @@ class QueueBackend(Protocol):
 
 
 class InMemoryQueue:
-    """POC queue — replaced by SQS in MVP."""
+    """In-process queue for local development.
+
+    TODO(MVP): Replace with SQS per docs/ROADMAP.md (MVP-1.3).
+    """
 
     def __init__(self) -> None:
         self.messages: list[CrawlJobMessage] = []

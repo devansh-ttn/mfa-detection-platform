@@ -186,13 +186,43 @@ Per [`.cursor/skills/mfa-crawler/SKILL.md`](../../.cursor/skills/mfa-crawler/SKI
 
 ## Validation
 
+### Automated checks
+
 ```bash
 python scripts/seed/validate_gold_labels.py
 ```
 
+Validates:
+
+- CSV/JSONL row parity and manifest counts
+- Required fields and enums per `schema/gold_label_record.schema.json`
+- Minimum label counts (`MFA_High` ≥50, `Non_MFA` ≥50)
+- `record_id` format (`gl_[a-f0-9]{16}`)
+
+Last automated run: **2026-07-06** — 615 records OK.
+
+### Ad Ops review status
+
+| Check | Status | Notes |
+|-------|--------|-------|
+| Automated schema + distribution | ✅ Pass | `validate_gold_labels.py` |
+| Stratified sample review (50 URLs) | ⏳ Pending | Export with `head`/`shuf` on `gold_labels.csv` |
+| DSP inventory overlap | ⏳ Pending | Confirm seed domains appear in ad ops feeds |
+| Formal Ad Ops sign-off | ⏳ Pending | Record approver + date below when complete |
+
+**Approver sign-off** (fill when complete):
+
+```
+Reviewer:
+Date:
+Notes:
+```
+
+Until formal sign-off, treat labels as **bootstrap training data** — suitable for crawler spike and model training, not production blocking.
+
 ## Next steps
 
-1. Ad Ops review sample (50 URLs stratified by label)
+1. Complete Ad Ops sample review (50 URLs stratified by label) and record sign-off above
 2. Confirm DSP inventory overlap
 3. Ingest seed URLs → run POC crawler on subset → populate `signal_snapshots`
 4. Train rules + XGBoost baseline per [`docs/ROADMAP.md`](../../docs/ROADMAP.md)

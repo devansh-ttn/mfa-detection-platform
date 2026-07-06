@@ -13,10 +13,13 @@ WORKDIR /app
 COPY pyproject.toml uv.lock ./
 COPY common/ /app/common/
 COPY crawler/ /app/crawler/
-COPY ml/pyproject.toml /app/ml/pyproject.toml
 COPY backend/pyproject.toml /app/backend/pyproject.toml
+COPY backend/src/ /app/backend/src/
+COPY ml/pyproject.toml /app/ml/pyproject.toml
 
-RUN uv sync --frozen --package mfa-crawler --no-dev
+RUN uv sync --frozen --package mfa-crawler --no-dev \
+    && uv run --package mfa-crawler playwright install-deps chromium \
+    && uv run --package mfa-crawler playwright install chromium
 
 COPY crawler/src/ /app/crawler/src/
 

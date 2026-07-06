@@ -1,8 +1,10 @@
 # MFA Platform — Phased Build Plan
 
 **Created:** 2026-07-05  
-**Scope:** POC → MVP → Production  
+**Scope:** Baseline → MVP → Production (task IDs retain `POC-*` labels from planning — not used in code)  
 **References:** [`docs/ROADMAP.md`](../ROADMAP.md), [`docs/ARCHITECTURE.md`](../ARCHITECTURE.md), [`AGENTS.md`](../../AGENTS.md)
+
+> **Naming:** Implementation code uses `SignalFeatures`, `schema_version: v1`, `ENV=local`. Defer scope via `TODO(MVP):` comments, not class prefixes.
 
 ---
 
@@ -20,8 +22,13 @@
 | P0-08 | In-memory queue stub + worker container stubs | ✅ Done |
 | P0-09 | Gold-label seed dataset (`data/seed/`, 600+ URLs) | ✅ Done |
 | P0-10 | README + AGENTS local dev documentation | ✅ Done |
+| POC-1.1 | Gold-label validation + Ad Ops review doc (`data/seed/README.md`) | ✅ Done (automated); Ad Ops sign-off pending |
+| POC-1.2 | Crawl feature subset in `docs/SIGNALS.md` | ✅ Done |
+| POC-1.3 | Pydantic `SignalSnapshot` schema (`SignalFeatures` in `schemas/signals.py`) | ✅ Done |
+| POC-1.4 | `GET /api/v1/signals/{url_id}` | ✅ Done |
+| POC-1.5 | Batch ingest CLI (`scripts/seed/ingest_gold_labels.py`) | ✅ Done |
 
-**Next milestone:** End-to-end POC — crawl → signals → score → template explanation → measurable precision/recall on gold labels.
+**Next milestone:** POC-2 — Playwright crawler + DOM metrics → persist `signal_snapshots`.
 
 ---
 
@@ -68,11 +75,11 @@ gantt
 
 | ID | Task | Layer | Deps | Acceptance criteria |
 |----|------|-------|------|---------------------|
-| POC-1.1 | Validate gold labels with Ad Ops (`scripts/seed/validate_gold_labels.py` + manual review sample) | Data | — | Sign-off on label distribution; document in `data/seed/README.md` |
-| POC-1.2 | Finalize POC feature subset (~15–20 features) in `docs/SIGNALS.md` | ML/Signals | POC-1.1 | POC feature list marked; null vs 0 conventions documented |
-| POC-1.3 | Add Pydantic `SignalSnapshot` schema matching JSONB store | Backend | POC-1.2 | Validated model; unit tests for schema round-trip |
-| POC-1.4 | Implement `GET /api/v1/signals/{url_id}` (versioned snapshots) | API | POC-1.3 | Returns snapshots; pagination by version |
-| POC-1.5 | Batch ingest CLI — load `gold_labels.jsonl` via ingestion API | Scripts | P0-06 | Script ingests N URLs; reports job IDs |
+| POC-1.1 | Validate gold labels with Ad Ops (`scripts/seed/validate_gold_labels.py` + manual review sample) | Data | — | Sign-off on label distribution; document in `data/seed/README.md` | ✅ |
+| POC-1.2 | Finalize POC feature subset (~15–20 features) in `docs/SIGNALS.md` | ML/Signals | POC-1.1 | POC feature list marked; null vs 0 conventions documented | ✅ |
+| POC-1.3 | Add Pydantic `SignalSnapshot` schema matching JSONB store | Backend | POC-1.2 | Validated model; unit tests for schema round-trip | ✅ |
+| POC-1.4 | Implement `GET /api/v1/signals/{url_id}` (versioned snapshots) | API | POC-1.3 | Returns snapshots; pagination by version | ✅ |
+| POC-1.5 | Batch ingest CLI — load `gold_labels.jsonl` via ingestion API | Scripts | P0-06 | Script ingests N URLs; reports job IDs | ✅ |
 
 ---
 

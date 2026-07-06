@@ -4,18 +4,32 @@ AI-enabled **Made-For-Advertising (MFA)** detection platform with explainable cl
 
 ## Status
 
-**POC in progress** — backend ingestion API is bootstrapped (URL submit, crawl jobs, Postgres). Crawler and ML workers run as **stubs** until Phase 2/3.
+**Early development** — ingestion API and signal schema are live. The **Playwright crawler** extracts DOM metrics into `SignalSnapshotPayload` (smoke CLI + tests). Worker queue wiring and ML scoring are still in progress.
 
-| Component | State |
-|-----------|--------|
-| `backend-api` | FastAPI — `POST /api/v1/urls`, `GET /api/v1/jobs/{id}` |
-| `postgres` | PostgreSQL 16 — URLs, crawl jobs, schema for signals/classifications |
-| `crawler-worker` | Stub consumer (Playwright crawl in Phase 3) |
-| `ml-worker` | Stub consumer (rules + XGBoost in Phase 2) |
+| Component | State | Details |
+|-----------|--------|---------|
+| `backend-api` | Live | Ingestion, jobs, signal snapshots API |
+| `postgres` | Live | URLs, crawl jobs, signal/classification schema |
+| `crawler-worker` | Partial | Playwright crawl + DOM parser; queue consumer pending |
+| `ml-worker` | Stub | Rules + XGBoost scoring pending |
+
+**Service guides:** [backend](backend/README.md) · [crawler](crawler/README.md) · [ml](ml/README.md) · [common](common/README.md)
 
 Architecture: [`.cursor/plans/mfa_platform_architecture_48645023.plan.md`](.cursor/plans/mfa_platform_architecture_48645023.plan.md)  
-**Build plan:** [`docs/plans/2026-07-05-phased-build-plan.md`](docs/plans/2026-07-05-phased-build-plan.md) — POC → MVP → Production tasks  
-Seed data: [`data/seed/`](data/seed/) — 600+ gold-labeled URLs for POC training.
+**Build plan:** [`docs/plans/2026-07-05-phased-build-plan.md`](docs/plans/2026-07-05-phased-build-plan.md)  
+Seed data: [`data/seed/`](data/seed/) — 600+ gold-labeled URLs for training.
+
+### End-to-end flow (target)
+
+```
+POST /urls  -->  crawl job  -->  crawler (Playwright)  -->  signal_snapshots
+                                                                  |
+                                                           ml-worker (rules + XGBoost)
+                                                                  |
+                                                           classifications + audit
+```
+
+Today: ingest + crawl smoke work independently; durable queue and DB persist for crawls are next milestones.
 
 ---
 
@@ -35,6 +49,28 @@ Optional (native Python dev without containerizing the API):
 
 ---
 
+## Environment files (why more than one?)
+
+We do **not** duplicate config for every service. There are two roles:
+
+| File | When you need it | Why it exists |
+|------|------------------|---------------|
+| **`.env`** (repo root) | `docker compose up` | Compose loads `./.env` automatically and injects vars into containers. DB host is `postgres` (Docker network). |
+| **`backend/.env`** | Native API on the host (`uvicorn` outside Docker) | Pydantic settings load `backend/.env` when cwd is `backend/`. DB host is `localhost` (published port). |
+| **`crawler/.env`** | Optional | Crawler-only settings (`CRAWL_*`). Smoke CLI reads `os.getenv`; Compose still uses root `.env` for workers. |
+
+**Rule of thumb**
+
+- **Everything in Docker** → only copy `cp .env.example .env` at the repo root.
+- **API on host + Postgres in Docker** → also `cp backend/.env.example backend/.env`.
+- **Custom crawl settings locally** → optionally `cp crawler/.env.example crawler/.env`.
+
+`ml-worker` has no separate `.env` yet; it only needs `ENV`, `LOG_LEVEL`, and `DATABASE_URL` from Compose today.
+
+Do not commit `.env` files (gitignored). Commit `.env.example` templates only.
+
+---
+
 ## Run locally with Docker Compose
 
 All commands below are run from the **repository root** (`mfa-detection-platform/`).
@@ -47,7 +83,9 @@ cd mfa-detection-platform
 cp .env.example .env
 ```
 
-The root `.env` file is read by Compose. Defaults work for local POC; edit only if you change Postgres credentials or ports.
+The root `.env` is read by Compose only. Defaults work for local development; edit if you change Postgres credentials or ports.
+
+For native backend dev on the host, also see [Environment files](#environment-files-why-more-than-one) and `backend/.env.example`.
 
 | Variable | Default (Docker) | Notes |
 |----------|------------------|-------|
@@ -55,6 +93,7 @@ The root `.env` file is read by Compose. Defaults work for local POC; edit only 
 | `DATABASE_URL` | `...@postgres:5432/mfa` | Hostname `postgres` = Compose service name |
 | `DATABASE_URL_SYNC` | `...@postgres:5432/mfa` | Used by Alembic on API startup |
 | `LOG_LEVEL` | `INFO` | JSON structured logs |
+| `ENV` | `local` | App environment label |
 
 ### 2. Build and start core services
 
@@ -104,17 +143,40 @@ Response is `202 Accepted` with `job_id` values. Poll a job:
 curl -s http://localhost:8000/api/v1/jobs/JOB_ID | jq
 ```
 
-Jobs are enqueued in-memory inside the API process for POC; worker containers will consume from a real queue in later phases.
+Jobs are enqueued in-memory inside the API process for local dev; worker containers will consume from a durable queue in a later milestone.
 
-### 5. Optional — start worker stubs
+### 5. Crawl smoke test (Playwright)
 
-Crawler and ML images are POC placeholders. They use the `workers` Compose profile:
+The crawler can extract DOM metrics without the API. See [`crawler/README.md`](crawler/README.md) for full detail.
+
+**Native:**
+
+```bash
+uv sync --all-packages
+uv run --package mfa-crawler playwright install chromium
+uv run --package mfa-crawler python -m mfa_crawler.smoke
+```
+
+**Docker:**
+
+```bash
+docker compose --profile workers build crawler-worker
+docker compose --profile workers run --rm crawler-worker \
+  uv run --package mfa-crawler python -m mfa_crawler.smoke
+```
+
+Prints a `SignalSnapshotPayload` JSON document (`schema_version: v1`) with five core DOM metrics.
+
+### 6. Optional — start worker containers
 
 ```bash
 docker compose --profile workers up -d
 ```
 
-View worker logs (JSON):
+| Worker | Current behavior |
+|--------|------------------|
+| `crawler-worker` | Heartbeat stub; use `smoke` CLI for crawls until queue is wired |
+| `ml-worker` | Heartbeat stub until scoring pipeline ships |
 
 ```bash
 docker compose logs -f crawler-worker ml-worker
@@ -124,14 +186,14 @@ docker compose logs -f crawler-worker ml-worker
 
 ## Compose services reference
 
-| Service | Container | Port | Dockerfile | Profile |
-|---------|-----------|------|------------|---------|
-| `postgres` | `mfa-postgres` | 5432 | Official `postgres:16-alpine` | default |
-| `backend-api` | `mfa-backend-api` | 8000 | `backend/Dockerfile` | default |
-| `crawler-worker` | `mfa-crawler-worker` | — | `crawler/Dockerfile` | `workers` |
-| `ml-worker` | `mfa-ml-worker` | — | `ml/Dockerfile` | `workers` |
+| Service | Container | Port | Dockerfile | Profile | README |
+|---------|-----------|------|------------|---------|--------|
+| `postgres` | `mfa-postgres` | 5432 | Official `postgres:16-alpine` | default | — |
+| `backend-api` | `mfa-backend-api` | 8000 | `backend/Dockerfile` | default | [backend/README.md](backend/README.md) |
+| `crawler-worker` | `mfa-crawler-worker` | — | `crawler/Dockerfile` | `workers` | [crawler/README.md](crawler/README.md) |
+| `ml-worker` | `mfa-ml-worker` | — | `ml/Dockerfile` | `workers` | [ml/README.md](ml/README.md) |
 
-Python dependencies are installed with **uv** inside each image. The monorepo uses a single `uv.lock` at the repo root.
+Python dependencies are installed with **uv** inside each image. The monorepo uses a single `uv.lock` at the repo root. Shared logging lives in [common/README.md](common/README.md).
 
 ---
 
@@ -177,6 +239,9 @@ Check logs: `docker compose logs backend-api`. Ensure `DATABASE_URL_SYNC` uses h
 **`curl: connection refused` on :8000**  
 Wait for Postgres healthcheck and migration: `docker compose logs -f backend-api` until you see the uvicorn startup line.
 
+**Playwright / Chromium errors (crawler)**  
+Run `uv run --package mfa-crawler playwright install chromium` on the host, or rebuild the `crawler-worker` image. See [crawler/README.md](crawler/README.md).
+
 ---
 
 ## Native development (API on host, Postgres in Docker)
@@ -203,11 +268,20 @@ API: http://localhost:8000/docs
 ### Tests
 
 ```bash
-# Unit tests (no database)
-uv run --directory backend pytest tests/test_normalizer.py -v
+# Backend unit tests
+uv run --directory backend pytest tests/test_normalizer.py tests/test_signals_schema.py -v
 
-# Integration tests (requires Postgres on localhost:5432)
+# Backend integration (requires Postgres on localhost:5432)
 MFA_RUN_INTEGRATION=1 uv run --directory backend pytest -v
+
+# Crawler unit tests
+uv run --directory crawler pytest -m "not integration" -v
+
+# Crawler browser integration
+PLAYWRIGHT_SMOKE=1 uv run --directory crawler pytest -m integration -v
+
+# Gold-label seed validation
+python scripts/seed/validate_gold_labels.py
 ```
 
 ---
@@ -219,13 +293,15 @@ mfa-detection-platform/
 ├── docker-compose.yml      # Local orchestration (root level)
 ├── pyproject.toml          # uv workspace root
 ├── uv.lock
-├── .env.example            # Docker Compose env
-├── common/                 # mfa-common (shared logging)
-├── backend/                # FastAPI ingestion API
-├── crawler/                # Playwright crawl worker
-├── ml/                     # Rules + XGBoost scoring
+├── .env.example            # Docker Compose env (repo root)
+├── common/                 # mfa-common — shared logging          → common/README.md
+├── backend/                # FastAPI ingestion API                  → backend/README.md
+│   └── .env.example        # Native host dev only (localhost DB)
+├── crawler/                # Playwright crawl worker                → crawler/README.md
+│   └── .env.example        # Optional CRAWL_* overrides (native)
+├── ml/                     # Rules + XGBoost scoring                → ml/README.md
 ├── data/seed/              # Gold-label training URLs
-└── docs/                   # Architecture, ADRs, roadmap
+└── docs/                   # Architecture, ADRs, roadmap, signals
 ```
 
 Details: [`AGENTS.md`](AGENTS.md)
@@ -244,11 +320,13 @@ Details: [`AGENTS.md`](AGENTS.md)
 
 ---
 
-## Roadmap phases
+## Roadmap milestones
 
-| Phase | Focus |
-|-------|-------|
-| **POC** (6–8 wk) | Rules + XGBoost, single-persona crawl, Postgres, template explanations |
+Planning scope only — implementation uses production-oriented names (`SignalFeatures`, `v1`). See [`AGENTS.md`](AGENTS.md).
+
+| Milestone | Focus |
+|-----------|-------|
+| **Baseline** (6–8 wk) | Rules + XGBoost, single-persona crawl, Postgres, template explanations |
 | **MVP** (+10–12 wk) | Dual-persona, LLM explanations, RAG v1, review console, OpenSearch |
 | **Production** (+12–16 wk) | Near-real-time, pre-bid API, auto-retrain, SSO, multi-region |
 

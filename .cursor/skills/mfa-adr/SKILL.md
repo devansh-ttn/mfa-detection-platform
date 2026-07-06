@@ -44,6 +44,6 @@ Next ADR: ADR-010 (check `docs/ADRS.md` for latest)
 
 - ADR-001: No LLM-only classification
 - ADR-002: Page-section granularity
-- ADR-004: OpenSearch for vector (MVP+)
+- ADR-004: OpenSearch for vector — TODO(MVP); see `docs/ROADMAP.md`
 
 Update `docs/ADRS.md` and reference from `AGENTS.md` if mission-impacting.

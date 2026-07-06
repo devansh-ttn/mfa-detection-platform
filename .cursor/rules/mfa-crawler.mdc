@@ -8,17 +8,19 @@ alwaysApply: false
 
 Reference: **`docs/SIGNALS.md`**, **`docs/ADRS.md`** (ADR-003)
 
-## Dual-persona (MVP+)
+## Dual-persona
 
 1. **Direct:** navigate URL without referrer
 2. **Referral:** simulate Outbrain/Taboola referrer header
 
 Compute `referral_direct_delta_score` from persona diffs.
 
+> **TODO(MVP):** Dual-persona crawl — start with `direct` only; see `docs/ROADMAP.md`.
+
 ## Dwell & refresh
 
-- Minimum **60s dwell** for refresh detection (POC may use shorter with documented trade-off)
-- Capture `refresh_events_60s`, `avg_refresh_interval_sec`
+- Target **60s dwell** for refresh detection (`refresh_events_60s`, `avg_refresh_interval_sec`)
+- Until dwell is wired, store `null` for refresh fields per `docs/SIGNALS.md`
 
 ## Page depth
 
@@ -31,7 +33,7 @@ Persist to S3 per `url_id` + `version`: screenshot, HTML, `dom_metrics.json`
 
 ## DOM metrics
 
-Extract: `ad_to_content_ratio`, `ads_above_fold`, `ad_slots_count`, `sticky_ad_count`, `video_autoplay_count`
+Extract into `SignalFeatures` (`docs/SIGNALS.md`): `ad_to_content_ratio`, `ads_above_fold`, `ad_slots_count`, `sticky_ad_count`, `video_autoplay_count`
 
 ## Worker pattern
 

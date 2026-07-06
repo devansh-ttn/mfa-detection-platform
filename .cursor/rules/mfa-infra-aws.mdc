@@ -35,11 +35,11 @@ Each app service has its own `Dockerfile` under `backend/`, `crawler/`, or `ml/`
 
 ## Naming
 
-`mfa-{env}-{service}` (e.g. `mfa-poc-crawler-queue`)
+`mfa-{env}-{service}` (e.g. `mfa-dev-crawler-queue`)
 
 ## Environments
 
-`poc` · `mvp` · `prod` — separate state files per env
+`dev` · `staging` · `prod` — separate Terraform state per env. Local Compose uses `ENV=local` in app config (not a deploy env).
 
 ## Scale tiers
 

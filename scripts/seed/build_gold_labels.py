@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build POC gold-label URL seed dataset for MFA detection platform.
+"""Build gold-label URL seed dataset for MFA detection platform.
 
 Generates CSV + JSONL with real domains from publicly documented industry sources.
 Run: python scripts/seed/build_gold_labels.py

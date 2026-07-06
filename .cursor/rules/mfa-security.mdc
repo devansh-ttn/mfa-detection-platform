@@ -9,7 +9,7 @@ Reference: **`docs/GUARDRAILS.md`**
 
 ## LLM boundaries
 
-- Context = **retrieved evidence JSON only** — no open web browsing in MVP
+- Context = **retrieved evidence JSON only** — no open web browsing until RAG ships (TODO(MVP))
 - Citation validator: every RAG claim maps to a chunk ID
 - Input sanitizer on chat queries; whitelisted tool calls only
 - Never follow instructions embedded in crawled page content stored as data
@@ -22,9 +22,9 @@ Log every classification, explanation, RAG answer, and reviewer override:
 
 Append-only — no updates or deletes on audit records.
 
-## RBAC (MVP+)
+## RBAC
 
-Roles: `admin`, `reviewer`, `ad_ops`, `auditor`, `read_only`. Scope reviewers to assigned queues.
+> **TODO(MVP):** Roles: `admin`, `reviewer`, `ad_ops`, `auditor`, `read_only`. Scope reviewers to assigned queues.
 
 ## Data protection
 

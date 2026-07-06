@@ -19,7 +19,7 @@ No LLM generation without an evidence pack. If retrieval score &lt; threshold �
 ## Query routing
 
 - Structured lookups ("why is X MFA?") → SQL first, vector optional
-- Semantic ("similar sites") → OpenSearch k-NN (RAG v2 only)
+- Semantic ("similar sites") → OpenSearch k-NN — TODO(Production): RAG v2
 - Change detection → diff `signal_snapshot` versions
 
 ## Citation validator
