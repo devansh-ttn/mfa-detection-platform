@@ -28,7 +28,7 @@
 | POC-1.4 | `GET /api/v1/signals/{url_id}` | ✅ Done |
 | POC-1.5 | Batch ingest CLI (`scripts/seed/ingest_gold_labels.py`) | ✅ Done |
 
-**Next milestone:** POC-2 — Playwright crawler + DOM metrics → persist `signal_snapshots`.
+**Next milestone:** POC-3 — Rules + XGBoost scoring (POC-2 crawler complete).
 
 ---
 
@@ -87,12 +87,12 @@ gantt
 
 | ID | Task | Layer | Deps | Acceptance criteria |
 |----|------|-------|------|---------------------|
-| POC-2.1 | Add Playwright to `mfa-crawler`; local + Docker base image with browsers | Crawler | P0-03 | `playwright install` in Dockerfile; smoke test navigates example.com |
-| POC-2.2 | DOM parser — `ad_to_content_ratio`, `ads_above_fold`, `ad_slots_count`, `sticky_ad_count`, `content_word_count` | Crawler | POC-2.1 | Metrics JSON matches `docs/SIGNALS.md` names |
-| POC-2.3 | Single-persona crawl (`direct` only); persist `signal_snapshots` + `evidence_hash` | Crawler | POC-2.2, POC-1.3 | Crawl writes JSONB row; `persona=direct` |
-| POC-2.4 | Store artifacts locally for POC (`backend/evidence/` or configurable path; S3 deferred) | Crawler | POC-2.3 | Screenshot + HTML + `dom_metrics.json` per url_id/version |
-| POC-2.5 | Crawler spike on 100 domains from `domains_summary.csv` | Crawler | POC-2.4 | Report: success rate, median crawl time, top DOM metrics |
-| POC-2.6 | Wire `crawler-worker` — consume queue, update `crawl_jobs.status` | Workers | POC-2.3, POC-4.1 | Job transitions: `queued` → `running` → `completed`/`failed` |
+| POC-2.1 | Add Playwright to `mfa-crawler`; local + Docker base image with browsers | Crawler | P0-03 | `playwright install` in Dockerfile; smoke test navigates example.com | ✅ |
+| POC-2.2 | DOM parser — `ad_to_content_ratio`, `ads_above_fold`, `ad_slots_count`, `sticky_ad_count`, `content_word_count` | Crawler | POC-2.1 | Metrics JSON matches `docs/SIGNALS.md` names | ✅ |
+| POC-2.3 | Single-persona crawl (`direct` only); persist `signal_snapshots` + `evidence_hash` | Crawler | POC-2.2, POC-1.3 | Crawl writes JSONB row; `persona=direct` | ✅ |
+| POC-2.4 | Store artifacts locally for POC (`backend/evidence/` or configurable path; S3 deferred) | Crawler | POC-2.3 | Screenshot + HTML + `dom_metrics.json` per url_id/version | ✅ |
+| POC-2.5 | Crawler spike on 100 domains from `domains_summary.csv` | Crawler | POC-2.4 | Report: success rate, median crawl time, top DOM metrics | ✅ |
+| POC-2.6 | Wire `crawler-worker` — consume queue, update `crawl_jobs.status` | Workers | POC-2.3, POC-4.1 | Job transitions: `queued` → `running` → `completed`/`failed` | ✅ |
 
 ---
 

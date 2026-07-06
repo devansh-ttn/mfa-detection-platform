@@ -167,15 +167,25 @@ Includes **Non_MFA** entries on parent domains (`www.forbes.com`, `www.investing
 - Stratify by `content_category` and `page_type`
 - Hold out 20% by **domain** (not URL) to avoid leakage
 
-## Crawler POC spike (domain list only)
+## Crawler POC spike (POC-2.5)
 
-Extract unique domains without ingesting:
+Run the crawler spike on the first N domains in `domains_summary.csv` (default 100):
 
 ```bash
-cut -d, -f2 data/seed/domains_summary.csv | tail -n +2 | head -100
+# Full spike — writes crawler/artifacts/crawl_spike/report.json + report.md
+uv run --package mfa-crawler python -m mfa_crawler.spike_cli
+
+# Quick smoke (10 domains)
+uv run --package mfa-crawler python -m mfa_crawler.spike_cli --domains 10 --delay-sec 0
 ```
 
-Per [`.cursor/skills/mfa-crawler/SKILL.md`](../../.cursor/skills/mfa-crawler/SKILL.md): run dual-persona crawl on a 100-domain subset after ingest.
+The spike tries multiple seed URLs per domain (article → category → homepage) when paths 404.
+
+Ingest-only domain list (no crawl):
+
+```bash
+cut -d, -f1 data/seed/domains_summary.csv | tail -n +2 | head -100
+```
 
 ## Caveats
 

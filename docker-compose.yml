@@ -44,6 +44,10 @@ services:
       ENV: ${ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      EVIDENCE_DIR: /app/evidence
+      CRAWL_POLL_INTERVAL_SEC: ${CRAWL_POLL_INTERVAL_SEC:-5}
+    volumes:
+      - ./backend/evidence:/app/evidence
     depends_on:
       postgres:
         condition: service_healthy

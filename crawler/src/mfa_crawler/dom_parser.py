@@ -7,6 +7,15 @@ from typing import Any
 from mfa.schemas.signals import SignalFeatures
 from playwright.async_api import Page
 
+# Five metrics extracted in baseline crawl (POC-2.2); remaining schema fields stay null.
+CORE_DOM_METRIC_NAMES: tuple[str, ...] = (
+    "ad_to_content_ratio",
+    "ads_above_fold",
+    "ad_slots_count",
+    "sticky_ad_count",
+    "content_word_count",
+)
+
 # Injected into the page — returns raw metric dict for Python-side mapping.
 _EXTRACT_DOM_METRICS_JS = """
 () => {

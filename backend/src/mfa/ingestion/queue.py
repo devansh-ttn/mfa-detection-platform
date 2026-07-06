@@ -16,9 +16,10 @@ class QueueBackend(Protocol):
 
 
 class InMemoryQueue:
-    """In-process queue for local development.
+    """In-process queue retained for API tests and local introspection.
 
-    TODO(MVP): Replace with SQS per docs/ROADMAP.md (MVP-1.3).
+    The crawler-worker consumes jobs by polling Postgres (`job_poll.py`), not this
+    queue. TODO(MVP): replace with SQS per docs/ROADMAP.md (MVP-1.3).
     """
 
     def __init__(self) -> None:

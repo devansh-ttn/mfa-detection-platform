@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Crawl evidence artifacts (generated at runtime)
+backend/evidence/**
+!backend/evidence/.gitkeep

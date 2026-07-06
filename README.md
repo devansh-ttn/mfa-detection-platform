@@ -4,13 +4,13 @@ AI-enabled **Made-For-Advertising (MFA)** detection platform with explainable cl
 
 ## Status
 
-**Early development** — ingestion API and signal schema are live. The **Playwright crawler** extracts DOM metrics into `SignalSnapshotPayload` (smoke CLI + tests). Worker queue wiring and ML scoring are still in progress.
+**Early development** — ingestion API, Playwright crawler, and signal persistence are live. ML scoring is next.
 
 | Component | State | Details |
 |-----------|--------|---------|
 | `backend-api` | Live | Ingestion, jobs, signal snapshots API |
 | `postgres` | Live | URLs, crawl jobs, signal/classification schema |
-| `crawler-worker` | Partial | Playwright crawl + DOM parser; queue consumer pending |
+| `crawler-worker` | Live | Postgres job poll → crawl → `signal_snapshots` + local evidence |
 | `ml-worker` | Stub | Rules + XGBoost scoring pending |
 
 **Service guides:** [backend](backend/README.md) · [crawler](crawler/README.md) · [ml](ml/README.md) · [common](common/README.md)
@@ -29,7 +29,7 @@ POST /urls  -->  crawl job  -->  crawler (Playwright)  -->  signal_snapshots
                                                            classifications + audit
 ```
 
-Today: ingest + crawl smoke work independently; durable queue and DB persist for crawls are next milestones.
+Today: ingest → `crawl_jobs` → crawler-worker → `signal_snapshots` works end-to-end. ML scoring and durable Redis/SQS queue are next milestones.
 
 ---
 
@@ -143,7 +143,14 @@ Response is `202 Accepted` with `job_id` values. Poll a job:
 curl -s http://localhost:8000/api/v1/jobs/JOB_ID | jq
 ```
 
-Jobs are enqueued in-memory inside the API process for local dev; worker containers will consume from a durable queue in a later milestone.
+Jobs are stored in Postgres (`crawl_jobs.status=queued`). Start `crawler-worker` to process them:
+
+```bash
+docker compose --profile workers up -d crawler-worker
+docker compose logs -f crawler-worker
+```
+
+Poll job status via `GET /api/v1/jobs/{job_id}` until `status` is `completed`.
 
 ### 5. Crawl smoke test (Playwright)
 
@@ -175,7 +182,7 @@ docker compose --profile workers up -d
 
 | Worker | Current behavior |
 |--------|------------------|
-| `crawler-worker` | Heartbeat stub; use `smoke` CLI for crawls until queue is wired |
+| `crawler-worker` | Polls Postgres for queued jobs; crawls, persists snapshots + evidence artifacts |
 | `ml-worker` | Heartbeat stub until scoring pipeline ships |
 
 ```bash

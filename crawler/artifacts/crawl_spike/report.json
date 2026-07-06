@@ -1,0 +1,273 @@
+{
+  "schema_version": "crawl_spike_v1",
+  "generated_at": "2026-07-06T11:00:39.666852+00:00",
+  "domain_count": 100,
+  "attempted": 100,
+  "succeeded": 84,
+  "failed": 16,
+  "success_rate": 0.84,
+  "delay_sec_between_crawls": 0.3,
+  "crawl_duration_sec": {
+    "count": 84,
+    "median": 2.8822,
+    "p95": 9.3503,
+    "min": 1.0306,
+    "max": 17.2426,
+    "mean": 3.5963
+  },
+  "metrics": {
+    "ad_to_content_ratio": {
+      "count": 84,
+      "median": 0.0,
+      "p95": 0.9399,
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.0851
+    },
+    "ads_above_fold": {
+      "count": 84,
+      "median": 0.0,
+      "p95": 2.0,
+      "min": 0.0,
+      "max": 4.0,
+      "mean": 0.2619
+    },
+    "ad_slots_count": {
+      "count": 84,
+      "median": 0.0,
+      "p95": 7.25,
+      "min": 0.0,
+      "max": 19.0,
+      "mean": 1.0833
+    },
+    "sticky_ad_count": {
+      "count": 84,
+      "median": 0.0,
+      "p95": 0.0,
+      "min": 0.0,
+      "max": 1.0,
+      "mean": 0.0119
+    },
+    "content_word_count": {
+      "count": 84,
+      "median": 426.0,
+      "p95": 2106.25,
+      "min": 0.0,
+      "max": 2496.0,
+      "mean": 581.5952
+    }
+  },
+  "top_metrics_by_median": [
+    {
+      "metric": "content_word_count",
+      "median": 426.0
+    },
+    {
+      "metric": "ad_to_content_ratio",
+      "median": 0.0
+    },
+    {
+      "metric": "ads_above_fold",
+      "median": 0.0
+    },
+    {
+      "metric": "ad_slots_count",
+      "median": 0.0
+    },
+    {
+      "metric": "sticky_ad_count",
+      "median": 0.0
+    }
+  ],
+  "by_primary_gold_label": {
+    "MFA_High": {
+      "attempted": 29,
+      "succeeded": 24,
+      "failed": 5,
+      "success_rate": 0.8276,
+      "median_crawl_duration_sec": 2.9827
+    },
+    "Non_MFA": {
+      "attempted": 71,
+      "succeeded": 60,
+      "failed": 11,
+      "success_rate": 0.8451,
+      "median_crawl_duration_sec": 2.8822
+    }
+  },
+  "failures": [
+    {
+      "domain": "bloomberg.com",
+      "candidate_urls": [
+        "https://bloomberg.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://bloomberg.com/politics/",
+        "https://bloomberg.com/world/",
+        "https://bloomberg.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://bloomberg.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://bloomberg.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://bloomberg.com/politics/: navigation failed for 'https://bloomberg.com/politics/' (status=403); https://bloomberg.com/world/: navigation failed for 'https://bloomberg.com/world/' (status=403); https://bloomberg.com/: navigation failed for 'https://bloomberg.com/' (status=403)"
+    },
+    {
+      "domain": "bonvoyaged.com",
+      "candidate_urls": [
+        "https://bonvoyaged.com/destinations/",
+        "https://bonvoyaged.com/hotels/",
+        "https://bonvoyaged.com/"
+      ],
+      "primary_gold_label": "MFA_High",
+      "error": "https://bonvoyaged.com/destinations/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://bonvoyaged.com/destinations/\nCall log:\n  - navigating to \"https://bonvoyaged.com/destinations/\", waiting until \"domcontentloaded\"\n; https://bonvoyaged.com/hotels/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://bonvoyaged.com/hotels/\nCall log:\n  - navigating to \"https://bonvoyaged.com/hotels/\", waiting until \"domcontentloaded\"\n; https://bonvoyaged.com/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://bonvoyaged.com/\nCall log:\n  - navigating to \"https://bonvoyaged.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "dailyforest.com",
+      "candidate_urls": [
+        "https://dailyforest.com/animals/",
+        "https://dailyforest.com/environment/",
+        "https://dailyforest.com/"
+      ],
+      "primary_gold_label": "MFA_High",
+      "error": "https://dailyforest.com/animals/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://dailyforest.com/animals/\", waiting until \"domcontentloaded\"\n; https://dailyforest.com/environment/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://dailyforest.com/environment/\", waiting until \"domcontentloaded\"\n; https://dailyforest.com/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://dailyforest.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "dailymail.co.uk",
+      "candidate_urls": [
+        "https://dailymail.co.uk/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://dailymail.co.uk/politics/",
+        "https://dailymail.co.uk/world/",
+        "https://dailymail.co.uk/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://dailymail.co.uk/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://dailymail.co.uk/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://dailymail.co.uk/politics/: navigation failed for 'https://dailymail.co.uk/politics/' (status=403); https://dailymail.co.uk/world/: navigation failed for 'https://dailymail.co.uk/world/' (status=403); https://dailymail.co.uk/: navigation failed for 'https://dailymail.co.uk/' (status=403)"
+    },
+    {
+      "domain": "edmunds.com",
+      "candidate_urls": [
+        "https://edmunds.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://edmunds.com/news/",
+        "https://edmunds.com/reviews/",
+        "https://edmunds.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://edmunds.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://edmunds.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://edmunds.com/news/: navigation failed for 'https://edmunds.com/news/' (status=403); https://edmunds.com/reviews/: navigation failed for 'https://edmunds.com/reviews/' (status=403); https://edmunds.com/: navigation failed for 'https://edmunds.com/' (status=403)"
+    },
+    {
+      "domain": "fastcompany.com",
+      "candidate_urls": [
+        "https://fastcompany.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://fastcompany.com/leadership/",
+        "https://fastcompany.com/strategy/",
+        "https://fastcompany.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://fastcompany.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://fastcompany.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://fastcompany.com/leadership/: navigation failed for 'https://fastcompany.com/leadership/' (status=403); https://fastcompany.com/strategy/: navigation failed for 'https://fastcompany.com/strategy/' (status=403); https://fastcompany.com/: navigation failed for 'https://fastcompany.com/' (status=403)"
+    },
+    {
+      "domain": "globetip.com",
+      "candidate_urls": [
+        "https://globetip.com/article/you-wont-believe-what-happened-next/",
+        "https://globetip.com/politics/",
+        "https://globetip.com/world/",
+        "https://globetip.com/"
+      ],
+      "primary_gold_label": "MFA_High",
+      "error": "https://globetip.com/article/you-wont-believe-what-happened-next/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://globetip.com/article/you-wont-believe-what-happened-next/\", waiting until \"domcontentloaded\"\n; https://globetip.com/politics/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://globetip.com/politics/\", waiting until \"domcontentloaded\"\n; https://globetip.com/world/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://globetip.com/world/\", waiting until \"domcontentloaded\"\n; https://globetip.com/: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"https://globetip.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "go.reference.com",
+      "candidate_urls": [
+        "https://go.reference.com/article/you-wont-believe-what-happened-next/",
+        "https://go.reference.com/science/",
+        "https://go.reference.com/world/",
+        "https://go.reference.com/"
+      ],
+      "primary_gold_label": "MFA_High",
+      "error": "https://go.reference.com/article/you-wont-believe-what-happened-next/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://go.reference.com/article/you-wont-believe-what-happened-next/\nCall log:\n  - navigating to \"https://go.reference.com/article/you-wont-believe-what-happened-next/\", waiting until \"domcontentloaded\"\n; https://go.reference.com/science/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://go.reference.com/science/\nCall log:\n  - navigating to \"https://go.reference.com/science/\", waiting until \"domcontentloaded\"\n; https://go.reference.com/world/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://go.reference.com/world/\nCall log:\n  - navigating to \"https://go.reference.com/world/\", waiting until \"domcontentloaded\"\n; https://go.reference.com/: Page.goto: net::ERR_NAME_NOT_RESOLVED at https://go.reference.com/\nCall log:\n  - navigating to \"https://go.reference.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "icepop.com",
+      "candidate_urls": [
+        "https://icepop.com/movies/",
+        "https://icepop.com/tv/",
+        "https://icepop.com/"
+      ],
+      "primary_gold_label": "MFA_High",
+      "error": "https://icepop.com/movies/: Page.goto: net::ERR_CERT_DATE_INVALID at https://icepop.com/movies/\nCall log:\n  - navigating to \"https://icepop.com/movies/\", waiting until \"domcontentloaded\"\n; https://icepop.com/tv/: Page.goto: net::ERR_CERT_DATE_INVALID at https://icepop.com/tv/\nCall log:\n  - navigating to \"https://icepop.com/tv/\", waiting until \"domcontentloaded\"\n; https://icepop.com/: Page.goto: net::ERR_CERT_DATE_INVALID at https://icepop.com/\nCall log:\n  - navigating to \"https://icepop.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "inc.com",
+      "candidate_urls": [
+        "https://inc.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://inc.com/leadership/",
+        "https://inc.com/strategy/",
+        "https://inc.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://inc.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://inc.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://inc.com/leadership/: navigation failed for 'https://inc.com/leadership/' (status=403); https://inc.com/strategy/: navigation failed for 'https://inc.com/strategy/' (status=403); https://inc.com/: navigation failed for 'https://inc.com/' (status=403)"
+    },
+    {
+      "domain": "japantimes.co.jp",
+      "candidate_urls": [
+        "https://japantimes.co.jp/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://japantimes.co.jp/politics/",
+        "https://japantimes.co.jp/world/",
+        "https://japantimes.co.jp/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://japantimes.co.jp/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://japantimes.co.jp/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://japantimes.co.jp/politics/: navigation failed for 'https://japantimes.co.jp/politics/' (status=403); https://japantimes.co.jp/world/: navigation failed for 'https://japantimes.co.jp/world/' (status=403); https://japantimes.co.jp/: navigation failed for 'https://japantimes.co.jp/' (status=403)"
+    },
+    {
+      "domain": "marketwatch.com",
+      "candidate_urls": [
+        "https://marketwatch.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://marketwatch.com/investing/",
+        "https://marketwatch.com/markets/",
+        "https://marketwatch.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://marketwatch.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://marketwatch.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://marketwatch.com/investing/: navigation failed for 'https://marketwatch.com/investing/' (status=401); https://marketwatch.com/markets/: navigation failed for 'https://marketwatch.com/markets/' (status=401); https://marketwatch.com/: navigation failed for 'https://marketwatch.com/' (status=401)"
+    },
+    {
+      "domain": "mayoclinic.org",
+      "candidate_urls": [
+        "https://mayoclinic.org/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://mayoclinic.org/conditions/",
+        "https://mayoclinic.org/wellness/",
+        "https://mayoclinic.org/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://mayoclinic.org/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://mayoclinic.org/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://mayoclinic.org/conditions/: navigation failed for 'https://mayoclinic.org/conditions/' (status=403); https://mayoclinic.org/wellness/: navigation failed for 'https://mayoclinic.org/wellness/' (status=403); https://mayoclinic.org/: navigation failed for 'https://mayoclinic.org/' (status=403)"
+    },
+    {
+      "domain": "miamiherald.com",
+      "candidate_urls": [
+        "https://miamiherald.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://miamiherald.com/politics/",
+        "https://miamiherald.com/world/",
+        "https://miamiherald.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://miamiherald.com/2024/06/15/global-markets-rally-on-inflation-data/: Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://miamiherald.com/2024/06/15/global-markets-rally-on-inflation-data/\nCall log:\n  - navigating to \"https://miamiherald.com/2024/06/15/global-markets-rally-on-inflation-data/\", waiting until \"domcontentloaded\"\n; https://miamiherald.com/politics/: Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://miamiherald.com/politics/\nCall log:\n  - navigating to \"https://miamiherald.com/politics/\", waiting until \"domcontentloaded\"\n; https://miamiherald.com/world/: Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://miamiherald.com/world/\nCall log:\n  - navigating to \"https://miamiherald.com/world/\", waiting until \"domcontentloaded\"\n; https://miamiherald.com/: Page.goto: net::ERR_HTTP2_PROTOCOL_ERROR at https://miamiherald.com/\nCall log:\n  - navigating to \"https://miamiherald.com/\", waiting until \"domcontentloaded\"\n"
+    },
+    {
+      "domain": "nba.com",
+      "candidate_urls": [
+        "https://nba.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://nba.com/nba/",
+        "https://nba.com/nfl/",
+        "https://nba.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://nba.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://nba.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://nba.com/nba/: navigation failed for 'https://nba.com/nba/' (status=403); https://nba.com/nfl/: navigation failed for 'https://nba.com/nfl/' (status=403); https://nba.com/: navigation failed for 'https://nba.com/' (status=403)"
+    },
+    {
+      "domain": "oregonlive.com",
+      "candidate_urls": [
+        "https://oregonlive.com/2024/06/15/global-markets-rally-on-inflation-data/",
+        "https://oregonlive.com/politics/",
+        "https://oregonlive.com/world/",
+        "https://oregonlive.com/"
+      ],
+      "primary_gold_label": "Non_MFA",
+      "error": "https://oregonlive.com/2024/06/15/global-markets-rally-on-inflation-data/: navigation failed for 'https://oregonlive.com/2024/06/15/global-markets-rally-on-inflation-data/' (status=403); https://oregonlive.com/politics/: navigation failed for 'https://oregonlive.com/politics/' (status=403); https://oregonlive.com/world/: navigation failed for 'https://oregonlive.com/world/' (status=403); https://oregonlive.com/: navigation failed for 'https://oregonlive.com/' (status=403)"
+    }
+  ]
+}

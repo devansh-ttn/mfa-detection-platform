@@ -63,6 +63,7 @@ class IngestionService:
             if job.duplicate:
                 duplicate_count += 1
             else:
+                # Optional in-process enqueue (tests); worker polls crawl_jobs in Postgres.
                 await self._queue.enqueue_crawl(
                     CrawlJobMessage(
                         job_id=job.job_id,
