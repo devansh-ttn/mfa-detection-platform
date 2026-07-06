@@ -1,0 +1,10 @@
+This page shows characteristics consistent with a legitimate publisher.
+{%- if top_signals %}
+
+Supporting signals:
+{%- for sig in top_signals %}
+  • {{ sig.feature | replace("_", " ") | title }}: {{ sig.value }}
+{%- endfor %}
+{%- endif %}
+
+Ad density is within normal bounds and content quality signals are positive. No MFA patterns detected.
