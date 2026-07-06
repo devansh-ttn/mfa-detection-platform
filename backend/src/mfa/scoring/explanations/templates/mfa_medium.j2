@@ -1,0 +1,10 @@
+This page shows elevated MFA risk signals that warrant human review.
+{%- if top_signals %}
+
+Key evidence:
+{%- for sig in top_signals %}
+  • {{ sig.feature | replace("_", " ") | title }}: {{ sig.value }}
+{%- endfor %}
+{%- endif %}
+
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.
