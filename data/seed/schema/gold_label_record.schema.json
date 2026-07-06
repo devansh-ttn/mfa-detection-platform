@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mfa-detection-platform.internal/schemas/gold_label_record.json",
+  "title": "GoldLabelRecord",
+  "description": "Human-reviewed gold label for POC/MVP classifier training and evaluation",
+  "type": "object",
+  "required": [
+    "record_id",
+    "url",
+    "domain",
+    "gold_label",
+    "label_source",
+    "label_confidence",
+    "page_type",
+    "content_category",
+    "notes",
+    "source_batch_id",
+    "created_at"
+  ],
+  "properties": {
+    "record_id": {
+      "type": "string",
+      "pattern": "^gl_[a-f0-9]{16}$",
+      "description": "Stable identifier derived from normalized URL hash"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Full URL including path (page-section granularity)"
+    },
+    "domain": {
+      "type": "string",
+      "description": "Registrable domain or subdomain (e.g. za.investing.com)"
+    },
+    "gold_label": {
+      "type": "string",
+      "enum": ["MFA_High", "MFA_Medium", "MFA_Low", "Non_MFA", "Uncertain"]
+    },
+    "label_source": {
+      "type": "string",
+      "description": "Provenance of the label (vendor list, ad ops review, industry research)"
+    },
+    "label_confidence": {
+      "type": "string",
+      "enum": ["high", "medium", "low"]
+    },
+    "page_type": {
+      "type": "string",
+      "enum": ["homepage", "article", "category", "slideshow", "section"]
+    },
+    "content_category": {
+      "type": "string",
+      "description": "Vertical/category for stratified sampling"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Reviewer or sourcing notes"
+    },
+    "source_batch_id": {
+      "type": "string",
+      "description": "Batch version for idempotent ingestion"
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": false
+}

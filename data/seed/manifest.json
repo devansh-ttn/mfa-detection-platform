@@ -1,0 +1,27 @@
+{
+  "dataset": "gold_labels",
+  "version": "seed-v1-2026-07-03",
+  "created_at": "2026-07-03T13:16:31.695272+00:00",
+  "record_count": 615,
+  "unique_domains": 161,
+  "label_distribution": {
+    "MFA_High": 166,
+    "Non_MFA": 449
+  },
+  "files": {
+    "csv": "gold_labels.csv",
+    "jsonl": "gold_labels.jsonl",
+    "schema": "schema/gold_label_record.schema.json"
+  },
+  "sources": [
+    "Adalytics (Jan 2024) \u2014 ANA/WFA/ISBA/4A's MFA definition + Jounce/DeepSee confirmation",
+    "Pixalate Q1 2024 MFA Websites Ad Spend Report",
+    "Industry MFA coverage (ExchangeWire, AdExchanger, Campaign US)",
+    "Editorial publisher allowlist (established news, tech, sports, health publishers)"
+  ],
+  "caveats": [
+    "MFA classifications change daily; re-validate with Ad Ops before production blocking",
+    "Some URLs use representative article paths; verify reachability before crawl jobs",
+    "Contrast-set entries (forbes.com, investing.com, reference.com) are Non_MFA main domains"
+  ]
+}

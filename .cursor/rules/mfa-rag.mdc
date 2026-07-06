@@ -1,0 +1,42 @@
+---
+description: RAG bot retrieval, grounding, and response contract conventions
+globs: backend/**/rag/**/*,**/*rag*
+alwaysApply: false
+---
+
+# MFA Platform — RAG rules
+
+Reference: **`docs/RAG.md`**
+
+## Retrieve-first
+
+No LLM generation without an evidence pack. If retrieval score &lt; threshold → respond `insufficient` + `human_review`.
+
+## Response contract (required fields)
+
+`answer`, `confidence`, `citations[]`, `top_signals[]`, `recommended_action`, `limitations`
+
+## Query routing
+
+- Structured lookups ("why is X MFA?") → SQL first, vector optional
+- Semantic ("similar sites") → OpenSearch k-NN — TODO(Production): RAG v2
+- Change detection → diff `signal_snapshot` versions
+
+## Citation validator
+
+Every factual claim in `answer` must reference a `citations[].id` from the retrieved pack. Reject and regenerate on mismatch.
+
+## Chunk metadata
+
+Filter by `domain`, `url_id`, `signal_version`, `doc_type` on every vector query.
+
+## Cost controls
+
+- Cache grounded responses 24h keyed by `evidence_hash`
+- Token caps per query; batch off-peak for bulk indexing
+
+## Do not
+
+- Invent policy rules not in retrieved policy chunks
+- Return answers without `recommended_action`
+- Skip `limitations` when evidence is partial
