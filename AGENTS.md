@@ -46,7 +46,7 @@ Local dev & manual testing: **`docs/LOCAL_DEV_GUIDE.md`**
 
 ### Branch + verify before commit
 
-Work on a **phase branch** (e.g. `cursor/poc-4-workers`), not `main`/`develop` directly.
+Work on **`develop`** only. Do not commit directly to `main` or `develop`.
 
 When a phase task is done:
 

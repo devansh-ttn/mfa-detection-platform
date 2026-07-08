@@ -84,6 +84,7 @@ All commands below are run from the **repository root** (`mfa-detection-platform
 ```bash
 git clone <repo-url> mfa-detection-platform
 cd mfa-detection-platform
+git checkout develop
 cp .env.example .env
 ```
 

@@ -763,13 +763,19 @@ docker compose restart backend-api
 
 ---
 
-## 13. What each branch is working on
+## 13. Branch strategy
 
 | Branch | Purpose |
 |--------|---------|
-| `develop` | Integration branch — merged POC milestones |
-| `cursor/poc-4-workers` | POC-4 — score jobs, ml-worker, classifications API, audit |
-| `main` | Latest stable release |
+| `develop` | Active integration branch — all POC/Baseline work lands here |
+| `main` | Stable release (merge from `develop` when milestone exits) |
+
+Clone and work on `develop`:
+
+```bash
+git checkout develop
+git pull origin develop
+```
 
 ---
 
