@@ -5,6 +5,7 @@ description = "MFA rules engine, XGBoost ensemble, and calibration"
 requires-python = ">=3.12"
 dependencies = [
     "mfa-common",
+    "mfa-backend",
     "xgboost>=2.1",
     "scikit-learn>=1.5",
     "shap>=0.46",
@@ -27,8 +28,10 @@ packages = ["src/mfa_ml"]
 
 [tool.uv.sources]
 mfa-common = { workspace = true }
+mfa-backend = { workspace = true }
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff]

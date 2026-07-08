@@ -83,6 +83,12 @@ class TestMFAXGBClassifier:
         with pytest.raises(RuntimeError):
             clf.predict_proba([{}])
 
+    def test_raises_on_single_class_train_set(self) -> None:
+        clf = MFAXGBClassifier(FEATURE_NAMES)
+        train_f, train_l = _make_samples(10, 0)
+        with pytest.raises(ValueError, match="both MFA"):
+            clf.train(train_f, train_l)
+
     def test_feature_importances(self, trained_model: MFAXGBClassifier) -> None:
         importances = trained_model.get_feature_importances()
         assert set(importances.keys()) == set(FEATURE_NAMES)

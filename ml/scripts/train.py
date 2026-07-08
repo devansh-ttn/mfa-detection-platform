@@ -142,6 +142,27 @@ def train(
     if not train_pass:
         logger.warning("all_training_samples_matched_rules_skipping_xgb")
         train_pass = split.train
+    elif len({s.label for s in train_pass}) < 2 and len({s.label for s in split.train}) >= 2:
+        logger.warning(
+            "rules_prefilter_single_class_fallback",
+            n_pass=len(train_pass),
+            train_dist=split.label_distribution("train"),
+        )
+        train_pass = split.train
+
+    train_label_dist = split.label_distribution("train")
+    if len({s.label for s in train_pass}) < 2:
+        logger.error(
+            "insufficient_class_balance",
+            n_total=len(samples),
+            train_dist=train_label_dist,
+            val_dist=split.label_distribution("val"),
+            hint=(
+                "Crawl more gold-label URLs so both MFA and Non_MFA classes appear in "
+                "signal_snapshots. Only URLs with crawled snapshots are used for training."
+            ),
+        )
+        sys.exit(1)
 
     classifier = MFAXGBClassifier(
         feature_names=TRAINING_FEATURE_NAMES,

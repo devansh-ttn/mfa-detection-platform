@@ -115,7 +115,13 @@ class MFAXGBClassifier:
         """
         n_pos = sum(train_labels)
         n_neg = len(train_labels) - n_pos
-        scale_pos_weight = n_neg / n_pos if n_pos > 0 else 1.0
+        if n_pos == 0 or n_neg == 0:
+            raise ValueError(
+                "XGBoost requires both MFA (1) and Non_MFA (0) labels in the training set; "
+                f"got n_pos={n_pos}, n_neg={n_neg}. Crawl more gold-label URLs with both "
+                "classes and ensure the domain split leaves each class in train."
+            )
+        scale_pos_weight = n_neg / n_pos
 
         logger.info(
             "xgb_train_start",

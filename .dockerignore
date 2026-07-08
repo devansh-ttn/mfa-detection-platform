@@ -1,15 +1,55 @@
+# Git & editor metadata
 .git
+.gitignore
 .github
+.vscode
 .cursor
+.idea
+.DS_Store
+
+# Documentation & plans (not needed at runtime)
+*.md
+docs/
+
+# Build outputs & temp
+*.log
+tmp/
+dist/
+build/
+out/
+
+# Python caches & local envs
+node_modules/
+.venv/
+venv/
+ENV/
+__pycache__/
 **/.venv
 **/__pycache__
 **/.pytest_cache
 **/.ruff_cache
 **/.mypy_cache
 **/*.pyc
-**/.DS_Store
+
+# Tests (never ship test suites in production images)
+**/tests/
+**/test_*.py
+coverage/
+.pytest_cache/
+
+# Local data & runtime artifacts (mount at runtime instead)
 data/
-frontend/node_modules
+ml/artifacts/
+backend/evidence/
+**/*.pkl
+
+# Frontend (not in current API/crawler/ml images)
+frontend/
+
+# Terraform local state
 infra/terraform/.terraform
+
+# Secrets — never in build context
 .env
-backend/.env
+.env.*
+!.env.example

@@ -17,7 +17,8 @@ FastAPI async handlers. OpenAPI docs at `/docs`. Pydantic models for request/res
 | POST | `/api/v1/urls` | implemented | Submit URL(s) for scoring |
 | GET | `/api/v1/jobs/{job_id}` | implemented | Crawl job status |
 | GET | `/api/v1/signals/{url_id}` | implemented | Signal snapshots (versioned, paginated) |
-| GET | `/api/v1/classifications/{url_id}` | planned | Latest classification |
+| GET | `/api/v1/classifications/{url_id}` | implemented | Latest classification |
+| GET | `/api/v1/classifications/{url_id}/history` | implemented | Paginated classification history |
 | POST | `/api/v1/reviews` | planned | Reviewer override |
 | POST | `/api/v1/chat` | planned | RAG bot query |
 | GET | `/api/v1/blocklist` | planned | Export blocklist segment |

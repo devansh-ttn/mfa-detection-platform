@@ -217,6 +217,8 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
-# Crawl evidence artifacts (generated at runtime)
+# ML model binaries (regenerate via ml/scripts/train.py)
+ml/artifacts/**/*.pkl
+
 backend/evidence/**
 !backend/evidence/.gitkeep

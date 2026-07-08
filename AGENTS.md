@@ -40,8 +40,25 @@ Local dev & manual testing: **`docs/LOCAL_DEV_GUIDE.md`**
 4. **RAG:** `docs/RAG.md` before bot or retrieval changes
 5. **Security:** `docs/GUARDRAILS.md` + `.cursor/rules/mfa-security.mdc` for all AI-facing code
 6. **Cursor rules:** `.cursor/rules/mfa-*.mdc` — follow stack and layer conventions
-7. **Skills:** `.cursor/skills/` — use domain workflows for classifier, crawler, RAG, ADRs
-8. **Plans:** save implementation plans to `.cursor/plans/` or `docs/plans/YYYY-MM-DD-<feature>.md`
+7. **Skills:** `.cursor/skills/` — use domain workflows for classifier, crawler, RAG, ADRs, Docker
+8. **Containers:** `.cursor/skills/mfa-docker/SKILL.md` + `.cursor/rules/mfa-docker.mdc` when changing Dockerfiles, Compose, or `.dockerignore`
+9. **Plans:** save implementation plans to `.cursor/plans/` or `docs/plans/YYYY-MM-DD-<feature>.md`
+
+### Branch + verify before commit
+
+Work on a **phase branch** (e.g. `cursor/poc-4-workers`), not `main`/`develop` directly.
+
+When a phase task is done:
+
+1. **Unit tests** (integration auto-skipped without `MFA_RUN_INTEGRATION=1`):
+   ```bash
+   uv run --package mfa-backend pytest backend/tests/ -q
+   uv run --package mfa-ml pytest ml/tests/ -q
+   uv run --package mfa-crawler pytest crawler/tests/ -q -m "not integration"
+   ```
+2. **Integration** (optional; Postgres on `:5432`): `MFA_RUN_INTEGRATION=1 uv run --package mfa-backend pytest backend/tests/ -q`
+3. **Commit** on the phase branch (Conventional Commits, state *why*). No `.env`, pickles, or credentials.
+4. Open PR into `develop` when phase exit criteria pass.
 
 ## Milestone scope
 

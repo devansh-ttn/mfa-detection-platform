@@ -1,0 +1,41 @@
+{
+  "n_total_samples": 195,
+  "n_train": 154,
+  "n_val": 41,
+  "train_distribution": {
+    "MFA": 45,
+    "Non_MFA": 109
+  },
+  "val_distribution": {
+    "MFA": 12,
+    "Non_MFA": 29
+  },
+  "rules_metrics": {
+    "rule_precision": 0.0,
+    "rule_recall": 0.0,
+    "rule_coverage": 0.561,
+    "tp": 0,
+    "fp": 0,
+    "fn": 8,
+    "tn": 15
+  },
+  "feature_names": [
+    "ad_to_content_ratio",
+    "ads_above_fold",
+    "ad_slots_count",
+    "sticky_ad_count",
+    "content_word_count",
+    "refresh_events_60s",
+    "avg_refresh_interval_sec",
+    "content_uniqueness_score",
+    "author_page_exists",
+    "slideshow_pagination_depth",
+    "video_autoplay_count",
+    "page_load_ad_latency_ms",
+    "iframe_ad_count",
+    "native_ad_count",
+    "outbound_link_count",
+    "image_to_text_ratio"
+  ],
+  "artifact_dir": "ml/artifacts/v1"
+}

@@ -22,11 +22,18 @@ description: Navigates the MFA detection platform architecture, docs, phases, an
 | Shared | `common/src/mfa_common/` | `mfa-core.mdc` |
 | RAG | `backend/src/mfa/rag/` | `mfa-rag.mdc` |
 | Infra | `infra/terraform/` | `mfa-infra-aws.mdc` |
+| Containers | `*/Dockerfile`, `docker-compose.yml`, `.dockerignore` | `mfa-docker.mdc` |
 | UI | `frontend/src/` | `mfa-review-ui.mdc` |
 
 ## Current milestone: Baseline
 
-Single-persona crawl · rules + XGBoost · template explanations · Postgres · ingestion + signals API
-Dual-persona / LLM / RAG / review console → **MVP** (flag scope creep before implementing)
+Single-persona crawl · rules + XGBoost · async crawl→score workers · classifications API · Postgres
+POC-5 polish / dual-persona / LLM / RAG / review console → next (MVP for UI)
 
 Full HLD: `.cursor/plans/mfa_platform_architecture_48645023.plan.md`
+
+## Docker optimization
+
+When changing images or Compose: skill **`mfa-docker`** · rule **`mfa-docker.mdc`**.
+
+Key constraints: repo-root build context · `uv sync --frozen --no-dev` · crawler stays on `python:3.12-slim-bookworm` (Playwright) · pin `uv` version · exclude `data/` and `ml/artifacts/` from context.

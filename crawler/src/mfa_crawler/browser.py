@@ -9,12 +9,23 @@ from dataclasses import dataclass
 
 import structlog
 from playwright.async_api import Browser, Page, Playwright, async_playwright
+from playwright.async_api import TimeoutError as PlaywrightTimeoutError
+
+from mfa_crawler.errors import (
+    CrawlInvalidUrlError,
+    CrawlNavigationError,
+    CrawlNotFoundError,
+    CrawlTimeoutError,
+)
 
 logger = structlog.get_logger(__name__)
 
 DEFAULT_USER_AGENT = (
     "MFA-Detection-Crawler/0.1 (+https://github.com/ttn/mfa-detection-platform; research)"
 )
+
+# HTTP status codes that indicate the URL definitively no longer exists.
+_GONE_HTTP_STATUSES: frozenset[int] = frozenset({404, 410})
 
 
 @dataclass(frozen=True)
@@ -56,10 +67,25 @@ async def crawl_page(
         page.set_default_timeout(cfg.timeout_ms)
 
         logger.info("crawl_navigate_start", url=url, persona=persona)
-        response = await page.goto(url, wait_until="domcontentloaded")
+        try:
+            response = await page.goto(url, wait_until="domcontentloaded")
+        except PlaywrightTimeoutError as exc:
+            raise CrawlTimeoutError(
+                f"page load timed out for {url!r} (timeout_ms={cfg.timeout_ms})"
+            ) from exc
+        except Exception as exc:
+            # Playwright raises a generic Error for protocol-level failures
+            # (e.g. net::ERR_NAME_NOT_RESOLVED, net::ERR_INVALID_URL).
+            msg = str(exc).lower()
+            if "invalid url" in msg or "err_invalid_url" in msg:
+                raise CrawlInvalidUrlError(f"invalid URL {url!r}: {exc}") from exc
+            raise
+
         if response is None or not response.ok:
             status = response.status if response else None
-            raise RuntimeError(f"navigation failed for {url!r} (status={status})")
+            if status in _GONE_HTTP_STATUSES:
+                raise CrawlNotFoundError(url, status)
+            raise CrawlNavigationError(url, status)
 
         logger.info("crawl_navigate_done", url=url, status=response.status)
         yield page

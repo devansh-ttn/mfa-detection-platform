@@ -7,10 +7,13 @@ import os
 import uuid
 
 import structlog
+from mfa.audit.writer import write_audit_event
 from mfa.db.session import async_session_factory
 from mfa.ingestion.job_poll import claim_next_crawl_job, mark_job_completed, mark_job_failed
+from mfa.ingestion.score_poll import enqueue_score_job
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from mfa_crawler.errors import PERMANENT_ERROR_TYPES, CrawlError
 from mfa_crawler.persist import crawl_and_persist
 
 logger = structlog.get_logger(__name__)
@@ -26,13 +29,64 @@ async def process_claimed_job(
     *,
     session_factory: async_sessionmaker[AsyncSession] | None = None,
 ) -> None:
-    """Run crawl + persist for a claimed job and update crawl_jobs status."""
+    """Run crawl + persist for a claimed job and update crawl_jobs status.
+
+    Error handling:
+    - ``CrawlError`` subclasses carry an ``error_type`` that is written to
+      ``crawl_jobs.crawl_error_type`` for future skip-logic.
+    - Permanent errors (``not_found``, ``invalid_url``, ``robots_denied``) are
+      logged at WARNING and *not* re-raised — they are expected outcomes.
+    - Transient errors (``timeout``, ``http_error``, generic) are logged at
+      ERROR and re-raised so the consumer loop can apply back-off.
+    - Unknown / unexpected exceptions are always re-raised.
+    """
     factory = session_factory or async_session_factory
     try:
-        await crawl_and_persist(url_id, session_factory=factory)
+        persisted = await crawl_and_persist(url_id, session_factory=factory)
         async with factory() as session:
             await mark_job_completed(session, job_id)
+            await enqueue_score_job(
+                session,
+                url_id,
+                persisted.snapshot_id,
+            )
+            await write_audit_event(
+                session,
+                entity_type="url",
+                entity_id=str(url_id),
+                action="crawl.completed",
+                evidence_hash=persisted.evidence_hash,
+                payload={
+                    "job_id": str(job_id),
+                    "signal_snapshot_id": str(persisted.snapshot_id),
+                    "version": persisted.version,
+                    "persona": persisted.persona,
+                },
+            )
             await session.commit()
+
+    except CrawlError as exc:
+        is_permanent = exc.error_type in PERMANENT_ERROR_TYPES
+        log = logger.warning if is_permanent else logger.error
+        log(
+            "crawl_job_failed",
+            job_id=str(job_id),
+            url_id=str(url_id),
+            error_type=exc.error_type,
+            permanent=is_permanent,
+            error=str(exc),
+        )
+        async with factory() as session:
+            await mark_job_failed(
+                session,
+                job_id,
+                str(exc),
+                crawl_error_type=exc.error_type,
+            )
+            await session.commit()
+        if not is_permanent:
+            raise
+
     except Exception as exc:
         logger.exception("crawl_job_process_failed", job_id=str(job_id), url_id=str(url_id))
         async with factory() as session:
@@ -66,7 +120,12 @@ async def run_consumer_loop(
     poll_interval_sec: float | None = None,
     shutdown_event: asyncio.Event | None = None,
 ) -> None:
-    """Poll Postgres for queued crawl jobs until *shutdown_event* is set."""
+    """Poll Postgres for queued crawl jobs until *shutdown_event* is set.
+
+    Back-off: waits ``poll_interval_sec`` only when the queue is empty or a
+    transient error occurred.  Permanent failures (not_found, invalid_url) are
+    silently swallowed so the loop continues immediately to the next job.
+    """
     interval = poll_interval_sec if poll_interval_sec is not None else load_poll_interval_sec()
     stop = shutdown_event or asyncio.Event()
 

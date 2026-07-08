@@ -228,6 +228,14 @@ class FeatureExtractor:
         return result
 
 
+def _val_domain_count(n_domains: int, val_fraction: float) -> int:
+    """Hold out validation domains while keeping at least one domain in train."""
+    if n_domains <= 1:
+        return 0
+    n_val = max(1, round(n_domains * val_fraction))
+    return min(n_val, n_domains - 1)
+
+
 def domain_stratified_split(
     samples: list[LabeledSample],
     val_fraction: float = 0.20,
@@ -259,8 +267,8 @@ def domain_stratified_split(
     rng.shuffle(mfa_domains)
     rng.shuffle(non_mfa_domains)
 
-    n_val_mfa = max(1, round(len(mfa_domains) * val_fraction))
-    n_val_non_mfa = max(1, round(len(non_mfa_domains) * val_fraction))
+    n_val_mfa = _val_domain_count(len(mfa_domains), val_fraction)
+    n_val_non_mfa = _val_domain_count(len(non_mfa_domains), val_fraction)
 
     val_domains: set[str] = set(mfa_domains[:n_val_mfa]) | set(non_mfa_domains[:n_val_non_mfa])
 

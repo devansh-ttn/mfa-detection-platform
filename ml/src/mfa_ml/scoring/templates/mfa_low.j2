@@ -1,0 +1,10 @@
+This page shows weak MFA signals. It is being monitored but does not require immediate action.
+{%- if top_signals %}
+
+Observed signals:
+{%- for sig in top_signals %}
+  • {{ sig.feature | replace("_", " ") | title }}: {{ sig.value }}
+{%- endfor %}
+{%- endif %}
+
+Signal strength is insufficient for an MFA determination at this time. The placement will continue to be monitored for changes.

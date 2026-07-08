@@ -1,0 +1,10 @@
+This page exhibits strong Made-for-Advertising (MFA) signals.
+{%- if top_signals %}
+
+Key evidence:
+{%- for sig in top_signals %}
+  • {{ sig.feature | replace("_", " ") | title }}: {{ sig.value }}
+{%- endfor %}
+{%- endif %}
+
+The combination of high ad density and limited editorial content is consistent with MFA inventory. Recommend blocking this placement.
