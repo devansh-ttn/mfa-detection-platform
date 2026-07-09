@@ -28,7 +28,7 @@
 | POC-1.4 | `GET /api/v1/signals/{url_id}` | ✅ Done |
 | POC-1.5 | Batch ingest CLI (`scripts/seed/ingest_gold_labels.py`) | ✅ Done |
 
-**Next milestone:** POC-3 — Rules + XGBoost scoring (POC-2 crawler complete).
+**Next milestone:** POC-5 exit checklist — full gold-label batch E2E on live crawls; Ad Ops sign-off pending.
 
 ---
 
@@ -96,52 +96,53 @@ gantt
 
 ---
 
-## POC-3 — ML scoring (rules + XGBoost) (Week 2–4, parallel with POC-2)
+## POC-3 — ML scoring (rules + XGBoost) (Week 2–4, parallel with POC-2) — **Done**
 
 | ID | Task | Layer | Deps | Acceptance criteria |
 |----|------|-------|------|---------------------|
-| POC-3.1 | Rules engine v1 — high-confidence patterns (ad density + refresh placeholders) | ML | POC-1.2 | Rules return tier + `top_signals`; unit tests per rule |
-| POC-3.2 | Training pipeline — load gold labels + features; domain-level train/val split | ML | POC-1.1, POC-2.5 | `ml/scripts/train.py`; metrics JSON in `ml/artifacts/` |
-| POC-3.3 | XGBoost classifier + basic calibration (Platt or isotonic) | ML | POC-3.2 | Model artifact versioned with feature schema version |
-| POC-3.4 | Tier mapper — `MFA_High` / `Medium` / `Low` / `Non_MFA` / `Uncertain` | ML | POC-3.3 | Mapping table in code matches `docs/DOMAIN.md` |
-| POC-3.5 | SHAP or rule attribution → `top_signals` (top 5) | ML | POC-3.3 | Each classification has ranked contributions |
-| POC-3.6 | Template explanations (Jinja2) citing `top_signals` only | Backend | POC-3.5 | No LLM; explanation references signal names/values |
-| POC-3.7 | Evaluate on holdout — precision ≥85%, recall ≥70% | ML | POC-3.3 | Evaluation report committed to `ml/artifacts/{version}/metrics.json` |
+| POC-3.1 | Rules engine v1 — high-confidence patterns (ad density + refresh placeholders) | ML | POC-1.2 | Rules return tier + `top_signals`; unit tests per rule | ✅ |
+| POC-3.2 | Training pipeline — load gold labels + features; domain-level train/val split | ML | POC-1.1, POC-2.5 | `ml/scripts/train.py`; metrics JSON in `ml/artifacts/` | ✅ |
+| POC-3.3 | XGBoost classifier + basic calibration (Platt or isotonic) | ML | POC-3.2 | Model artifact versioned with feature schema version | ✅ |
+| POC-3.4 | Tier mapper — `MFA_High` / `Medium` / `Low` / `Non_MFA` / `Uncertain` | ML | POC-3.3 | Mapping table in code matches `docs/DOMAIN.md` | ✅ |
+| POC-3.5 | SHAP or rule attribution → `top_signals` (top 5) | ML | POC-3.3 | Each classification has ranked contributions | ✅ |
+| POC-3.6 | Template explanations (Jinja2) citing `top_signals` only | Backend | POC-3.5 | No LLM; explanation references signal names/values | ✅ |
+| POC-3.7 | Evaluate on holdout — precision ≥85%, recall ≥70% | ML | POC-3.3 | Evaluation report committed to `ml/artifacts/{version}/metrics.json` | ✅ |
 
 ---
 
-## POC-4 — Async worker pipeline (Week 4–5)
+## POC-4 — Async worker pipeline (Week 4–5) — **Done**
 
 | ID | Task | Layer | Deps | Acceptance criteria |
 |----|------|-------|------|---------------------|
-| POC-4.1 | Replace `InMemoryQueue` with Redis or Postgres-backed job poll (POC-simple) | Backend | P0-08 | API enqueue survives process restart (Redis preferred if added to compose) |
-| POC-4.2 | `crawl_consumer` — dequeue → crawl → write snapshot → enqueue score job | Workers | POC-2.6, POC-4.1 | End-to-end job flow without manual steps |
-| POC-4.3 | `score_consumer` in `ml-worker` — load snapshot → classify → write `classifications` | Workers | POC-3.6, POC-4.2 | Classification row has full output contract |
-| POC-4.4 | Audit writer — append `audit_events` on ingest, crawl complete, classify | Backend | P0-05 | Every score has `event_id`, `evidence_hash`, `payload` |
-| POC-4.5 | `GET /api/v1/classifications/{url_id}` — latest + history | API | POC-4.3 | Returns tier, score, confidence, top_signals, explanation |
+| POC-4.1 | Replace `InMemoryQueue` with Redis or Postgres-backed job poll (POC-simple) | Backend | P0-08 | API enqueue survives process restart (Redis preferred if added to compose) | ✅ |
+| POC-4.2 | `crawl_consumer` — dequeue → crawl → write snapshot → enqueue score job | Workers | POC-2.6, POC-4.1 | End-to-end job flow without manual steps | ✅ |
+| POC-4.3 | `score_consumer` in `ml-worker` — load snapshot → classify → write `classifications` | Workers | POC-3.6, POC-4.2 | Classification row has full output contract | ✅ |
+| POC-4.4 | Audit writer — append `audit_events` on ingest, crawl complete, classify | Backend | P0-05 | Every score has `event_id`, `evidence_hash`, `payload` | ✅ |
+| POC-4.5 | `GET /api/v1/classifications/{url_id}` — latest + history | API | POC-4.3 | Returns tier, score, confidence, top_signals, explanation | ✅ |
 
 ---
 
-## POC-5 — API polish & POC evaluation (Week 5–6)
+## POC-5 — API polish & POC evaluation (Week 5–6) — **In progress**
 
 | ID | Task | Layer | Deps | Acceptance criteria |
 |----|------|-------|------|---------------------|
 | POC-5.1 | Structured error codes on all endpoints; OpenAPI examples | API | POC-4.5 | `/docs` shows request/response examples |
-| POC-5.2 | List endpoints — jobs/classifications filter by `tier`, `domain`, `status` | API | POC-4.5 | Pagination + filters work |
+| POC-5.2 | List endpoints — jobs/classifications filter by `tier`, `domain`, `status` | API | POC-4.5 | Pagination + filters work | ✅ (jobs list) |
 | POC-5.3 | Run full gold-label batch through pipeline; error report | QA | POC-4.5 | ≥90% URLs crawl successfully |
 | POC-5.4 | Confusion matrix + per-tier breakdown vs gold labels | ML | POC-5.3 | Meets precision/recall targets or documents gap |
 | POC-5.5 | Basic reviewer export — CSV of uncertain/medium cases for HITL | Data | POC-5.3 | Ad Ops can review in spreadsheet |
-| POC-5.6 | POC demo script + update README with E2E walkthrough | Docs | POC-5.4 | New developer can run crawl→score in &lt;30 min |
+| POC-5.6 | POC demo script + update README with E2E walkthrough | Docs | POC-5.4 | New developer can run crawl→score in &lt;30 min | ✅ (`LOCAL_DEV_GUIDE` §7.14) |
 
 ---
 
 ## POC exit checklist
 
-- [ ] Precision ≥85%, Recall ≥70% on gold-label holdout
-- [ ] Every score emits: `tier`, `mfa_score`, `confidence`, `top_signals`, `explanation`, `evidence_hash`
-- [ ] Crawl + score off hot API path (async workers)
-- [ ] Audit row for each classification
+- [ ] Precision ≥85%, Recall ≥70% on gold-label holdout (see `ml/artifacts/v1/metrics.json`; validate on live crawls)
+- [x] Every score emits: `tier`, `mfa_score`, `confidence`, `top_signals`, `explanation`, `evidence_hash`
+- [x] Crawl + score off hot API path (async workers)
+- [x] Audit row for each classification
 - [ ] Ad Ops sign-off on sample explanations
+- [ ] Full gold-label batch crawl ≥90% success (POC-5.3)
 
 ---
 

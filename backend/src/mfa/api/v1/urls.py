@@ -1,12 +1,12 @@
 import uuid
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from mfa.core.errors import MFAError, NotFoundError
-from mfa.db.models import CrawlJob
+from mfa.db.models import CrawlJob, Url
 from mfa.db.session import get_db_session
 from mfa.ingestion.service import IngestionService
 from mfa.schemas.urls import (
@@ -55,6 +55,47 @@ async def submit_urls(
         duplicate=result.duplicate,
         invalid=result.invalid,
     )
+
+
+@router.get("/jobs", response_model=list[JobResponse])
+async def list_jobs(
+    session: AsyncSession = Depends(get_db_session),
+    status: str | None = Query(default=None, description="Filter by job status"),
+    domain: str | None = Query(default=None, description="Filter by URL domain"),
+    limit: int = Query(default=50, ge=1, le=500),
+    offset: int = Query(default=0, ge=0),
+) -> list[JobResponse]:
+    stmt = select(CrawlJob).options(joinedload(CrawlJob.url)).join(Url, CrawlJob.url_id == Url.id)
+
+    if status is not None:
+        stmt = stmt.where(CrawlJob.status == status)
+    if domain is not None:
+        stmt = stmt.where(Url.domain == domain)
+
+    jobs = await session.scalars(
+        stmt.order_by(CrawlJob.created_at.desc()).limit(limit).offset(offset)
+    )
+
+    result: list[JobResponse] = []
+    for job in jobs:
+        if job.url is None:
+            continue
+        result.append(
+            JobResponse(
+                job_id=job.id,
+                url_id=job.url_id,
+                status=job.status,
+                url=job.url.url,
+                normalized_url=job.url.normalized_url,
+                domain=job.url.domain,
+                priority=job.priority,
+                source_batch_id=job.source_batch_id,
+                error_message=job.error_message,
+                created_at=job.created_at,
+                updated_at=job.updated_at,
+            )
+        )
+    return result
 
 
 @router.get("/jobs/{job_id}", response_model=JobResponse)

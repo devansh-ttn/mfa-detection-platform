@@ -594,6 +594,47 @@ for tier in ['MFA_High', 'MFA_Medium', 'MFA_Low', 'Non_MFA', 'Uncertain']:
 
 ---
 
+### 7.14 End-to-end: ingest → crawl → score → read (≤30 min)
+
+Full pipeline using Docker workers and the poc-4 `score_jobs` queue:
+
+```bash
+# 1. Start stack + workers
+docker compose up -d
+docker compose --profile workers up -d
+
+# 2. Ingest URLs (smoke: 5 URLs)
+uv run python scripts/seed/ingest_gold_labels.py --limit 5
+
+# 3. List jobs and poll until completed
+curl -s "http://localhost:8000/api/v1/jobs?limit=5" | python3 -m json.tool
+curl -s http://localhost:8000/api/v1/jobs/<job_id> | python3 -m json.tool
+
+# 4. Read signals + classification (after crawl + ml-worker finish)
+curl -s http://localhost:8000/api/v1/signals/<url_id> | python3 -m json.tool
+curl -s http://localhost:8000/api/v1/classifications/<url_id> | python3 -m json.tool
+
+# 5. Train + evaluate (after batch crawl populates signal_snapshots)
+uv run --package mfa-ml python ml/scripts/train.py \
+  --db-url "postgresql://mfa:mfa@localhost:5432/mfa" \
+  --gold-labels data/seed/gold_labels.jsonl \
+  --artifact-dir ml/artifacts/v1
+uv run --package mfa-ml python ml/scripts/evaluate.py \
+  --db-url "postgresql://mfa:mfa@localhost:5432/mfa" \
+  --gold-labels data/seed/gold_labels.jsonl \
+  --artifact-dir ml/artifacts/v1
+```
+
+Watch worker logs while waiting:
+
+```bash
+docker compose logs -f crawler-worker ml-worker
+```
+
+Re-run evaluation on live crawled DOM features before claiming production-ready metrics.
+
+---
+
 ## 8. Run automated tests
 
 ### Backend tests
@@ -797,7 +838,8 @@ git pull origin develop
 | POC-4.3 (ml-worker score consumer) | Workers | **Done** | `mfa_ml/consumer.py` → `classifications` rows |
 | POC-4.4 (audit writer) | Backend | **Done** | `url.ingested`, `crawl.completed`, `classification.scored` |
 | POC-4.5 (classifications API) | API | **Done** | `GET /classifications/{url_id}` + `/history` |
-| POC-5 (API polish, batch eval, demo) | All | **Not started** | List/filter endpoints, reviewer CSV, `e2e_crawl_score.sh` |
+| POC-5.2 (list jobs endpoint) | API | **Done** | `GET /api/v1/jobs` with `status` / `domain` filters |
+| POC-5 (batch eval, HITL export, demo) | All | **In progress** | Full gold-label batch crawl, reviewer CSV, OpenAPI examples |
 | MVP (dual-persona, LLM, RAG, review UI) | All | **Not started** | Frontend at MVP-4.1; see `docs/ROADMAP.md` |
 
 **E2E path (live):** `POST /urls` → `crawl_jobs` → crawler-worker → `signal_snapshots` → `score_jobs` → ml-worker → `classifications` + `audit_events` → `GET /classifications/{url_id}`

@@ -158,6 +158,12 @@ class MFAXGBClassifier:
         )
         logger.info("xgb_train_done")
 
+    @property
+    def model(self) -> xgb.XGBClassifier:
+        if self._model is None:
+            raise RuntimeError("Model has not been trained yet; call train() first.")
+        return self._model
+
     def predict_proba(self, feature_dicts: list[dict[str, Any]]) -> np.ndarray:
         """Return P(MFA) for each sample as a 1-D numpy array.
 

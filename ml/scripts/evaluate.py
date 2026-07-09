@@ -149,6 +149,7 @@ def evaluate(
             "recall_target": POC_RECALL_TARGET,
             "precision_met": precision >= POC_PRECISION_TARGET,
             "recall_met": recall >= POC_RECALL_TARGET,
+            "meets_targets": precision >= POC_PRECISION_TARGET and recall >= POC_RECALL_TARGET,
         },
     }
 
@@ -184,7 +185,7 @@ def _print_metrics(m: dict) -> None:
     print(f"Recall        : {m['recall']:.1%}  (target ≥ {POC_RECALL_TARGET:.0%})")
     print(f"F1            : {m['f1']:.1%}")
     tgt = m["poc_targets"]
-    status = "PASS" if (tgt["precision_met"] and tgt["recall_met"]) else "FAIL"
+    status = "PASS" if tgt.get("meets_targets") else "FAIL"
     print(f"POC targets   : {status}")
     print("Tier breakdown:")
     for tier, dist in m["tier_breakdown"].items():
