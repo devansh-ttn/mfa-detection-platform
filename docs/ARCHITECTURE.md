@@ -50,6 +50,6 @@ Docker Compose at the **repository root** (`docker-compose.yml`) — one contain
 | `postgres` | `postgres:16-alpine` | Signal + job store |
 | `backend-api` | `backend/Dockerfile` | FastAPI ingestion API |
 | `crawler-worker` | `crawler/Dockerfile` | Playwright crawl consumer (Postgres job poll) |
-| `ml-worker` | `ml/Dockerfile` | Rules + classifier score consumer (stub) |
+| `ml-worker` | `ml/Dockerfile` | Score job poll → `classify_snapshot()` → classifications |
 
-Workers use the `workers` Compose profile. Crawl pipeline is wired; ML scoring is pending.
+Workers use the `workers` Compose profile. Full crawl → score → classifications path is wired (POC-4).

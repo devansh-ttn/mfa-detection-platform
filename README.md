@@ -4,32 +4,38 @@ AI-enabled **Made-For-Advertising (MFA)** detection platform with explainable cl
 
 ## Status
 
-**Early development** — ingestion API, Playwright crawler, and signal persistence are live. ML scoring is next.
+**Baseline — POC-4 complete.** Ingestion, crawl, ML scoring, and classifications API are wired end-to-end via async workers.
 
 | Component | State | Details |
 |-----------|--------|---------|
-| `backend-api` | Live | Ingestion, jobs, signal snapshots API |
-| `postgres` | Live | URLs, crawl jobs, signal/classification schema |
-| `crawler-worker` | Live | Postgres job poll → crawl → `signal_snapshots` + local evidence |
-| `ml-worker` | Stub | Rules + XGBoost scoring pending |
+| `backend-api` | Live | Ingestion, jobs, signals, classifications API, audit writer |
+| `postgres` | Live | URLs, crawl jobs, score jobs, signal snapshots, classifications, audit events |
+| `crawler-worker` | Live | Postgres poll → crawl → `signal_snapshots` → enqueue `score_jobs` |
+| `ml-worker` | Live | Postgres poll → `classify_snapshot()` → `classifications` + audit |
 
 **Service guides:** [backend](backend/README.md) · [crawler](crawler/README.md) · [ml](ml/README.md) · [common](common/README.md)
 
 Architecture: [`.cursor/plans/mfa_platform_architecture_48645023.plan.md`](.cursor/plans/mfa_platform_architecture_48645023.plan.md)  
 **Build plan:** [`docs/plans/2026-07-05-phased-build-plan.md`](docs/plans/2026-07-05-phased-build-plan.md)  
+**Baseline completion:** [`docs/plans/2026-07-06-baseline-completion.md`](docs/plans/2026-07-06-baseline-completion.md)  
 Seed data: [`data/seed/`](data/seed/) — 600+ gold-labeled URLs for training.
 
-### End-to-end flow (target)
+### End-to-end flow (live)
 
 ```
-POST /urls  -->  crawl job  -->  crawler (Playwright)  -->  signal_snapshots
-                                                                  |
-                                                           ml-worker (rules + XGBoost)
-                                                                  |
-                                                           classifications + audit
+POST /urls  -->  crawl_jobs  -->  crawler-worker  -->  signal_snapshots
+                                                              |
+                                                       score_jobs (queued)
+                                                              |
+                                                       ml-worker (rules + XGBoost)
+                                                              |
+                                              classifications + audit_events
+                                                              |
+                                              GET /classifications/{url_id}
 ```
 
-Today: ingest → `crawl_jobs` → crawler-worker → `signal_snapshots` works end-to-end. ML scoring and durable Redis/SQS queue are next milestones.
+**Next milestone (POC-5):** List/filter APIs, batch eval report, reviewer CSV export, demo script.  
+**Frontend:** MVP only — review console starts at MVP-4.1 (see [Roadmap](#roadmap-milestones)).
 
 ---
 
@@ -65,8 +71,6 @@ We do **not** duplicate config for every service. There are two roles:
 - **API on host + Postgres in Docker** → also `cp backend/.env.example backend/.env`.
 - **Custom crawl settings locally** → optionally `cp crawler/.env.example crawler/.env`.
 
-`ml-worker` has no separate `.env` yet; it only needs `ENV`, `LOG_LEVEL`, and `DATABASE_URL` from Compose today.
-
 Do not commit `.env` files (gitignored). Commit `.env.example` templates only.
 
 ---
@@ -80,12 +84,9 @@ All commands below are run from the **repository root** (`mfa-detection-platform
 ```bash
 git clone <repo-url> mfa-detection-platform
 cd mfa-detection-platform
+git checkout develop
 cp .env.example .env
 ```
-
-The root `.env` is read by Compose only. Defaults work for local development; edit if you change Postgres credentials or ports.
-
-For native backend dev on the host, also see [Environment files](#environment-files-why-more-than-one) and `backend/.env.example`.
 
 | Variable | Default (Docker) | Notes |
 |----------|------------------|-------|
@@ -94,6 +95,8 @@ For native backend dev on the host, also see [Environment files](#environment-fi
 | `DATABASE_URL_SYNC` | `...@postgres:5432/mfa` | Used by Alembic on API startup |
 | `LOG_LEVEL` | `INFO` | JSON structured logs |
 | `ENV` | `local` | App environment label |
+| `ARTIFACT_DIR` | `/artifacts` (ml-worker) | Mounted from `./ml/artifacts/v1` |
+| `SCORE_POLL_INTERVAL_SEC` | `5` | ML worker idle poll interval |
 
 ### 2. Build and start core services
 
@@ -115,79 +118,78 @@ Expected: `mfa-postgres` (healthy), `mfa-backend-api` (running).
 ### 3. Verify the stack
 
 ```bash
-# API liveness
 curl -s http://localhost:8000/health | jq
-
-# Database connectivity
 curl -s http://localhost:8000/health/db | jq
 ```
 
 Open interactive API docs: **http://localhost:8000/docs**
 
-### 4. Submit URLs (ingestion smoke test)
+### 4. Start workers (crawl + score)
 
 ```bash
-curl -s -X POST http://localhost:8000/api/v1/urls \
+docker compose --profile workers up -d --build
+docker compose --profile workers ps
+```
+
+Expected: `mfa-crawler-worker` and `mfa-ml-worker` running. The ML worker requires trained artifacts in `ml/artifacts/v1/` (mounted read-only at `/artifacts`).
+
+### 5. Full E2E smoke test (ingest → crawl → score → classification)
+
+```bash
+# Submit URL
+RESP=$(curl -s -X POST http://localhost:8000/api/v1/urls \
   -H "Content-Type: application/json" \
-  -d '{
-    "urls": ["https://example.com/article"],
-    "source_batch_id": "local-smoke-test",
-    "priority": 1
-  }' | jq
+  -d '{"urls": ["https://example.com"], "source_batch_id": "local-smoke-test"}')
+
+echo "$RESP" | jq
+JOB_ID=$(echo "$RESP" | jq -r '.jobs[0].job_id')
+URL_ID=$(echo "$RESP" | jq -r '.jobs[0].url_id')
+
+# Poll crawl job
+until [ "$(curl -s http://localhost:8000/api/v1/jobs/${JOB_ID} | jq -r .status)" = "completed" ]; do
+  echo "crawl: waiting..."; sleep 3
+done
+
+# Poll classification (score is async)
+until curl -sf "http://localhost:8000/api/v1/classifications/${URL_ID}" > /dev/null 2>&1; do
+  echo "score: waiting..."; sleep 3
+done
+
+curl -s "http://localhost:8000/api/v1/classifications/${URL_ID}" | jq
 ```
 
-Response is `202 Accepted` with `job_id` values. Poll a job:
+**Expect:** `tier`, `mfa_score`, `confidence`, `top_signals`, `explanation`, `evidence_hash`, `classifier`, `schema_version`.
+
+### 6. Read signals and classification history
 
 ```bash
-# Replace JOB_ID from the response above
-curl -s http://localhost:8000/api/v1/jobs/JOB_ID | jq
+curl -s "http://localhost:8000/api/v1/signals/${URL_ID}" | jq
+curl -s "http://localhost:8000/api/v1/classifications/${URL_ID}/history" | jq
 ```
 
-Jobs are stored in Postgres (`crawl_jobs.status=queued`). Start `crawler-worker` to process them:
+### 7. Verify audit trail (optional)
 
 ```bash
-docker compose --profile workers up -d crawler-worker
-docker compose logs -f crawler-worker
+docker exec -it mfa-postgres psql -U mfa -d mfa \
+  -c "SELECT action, entity_type, evidence_hash FROM audit_events ORDER BY occurred_at DESC LIMIT 10;"
 ```
 
-Poll job status via `GET /api/v1/jobs/{job_id}` until `status` is `completed`.
+**Expect actions:** `url.ingested`, `crawl.completed`, `classification.scored`.
 
-### 5. Crawl smoke test (Playwright)
+---
 
-The crawler can extract DOM metrics without the API. See [`crawler/README.md`](crawler/README.md) for full detail.
+## API endpoints (implemented)
 
-**Native:**
+| Method | Path | Purpose |
+|--------|------|---------|
+| `GET` | `/health`, `/health/db` | Liveness and DB connectivity |
+| `POST` | `/api/v1/urls` | Submit URL(s) for crawl + score |
+| `GET` | `/api/v1/jobs/{job_id}` | Crawl job status |
+| `GET` | `/api/v1/signals/{url_id}` | Versioned signal snapshots |
+| `GET` | `/api/v1/classifications/{url_id}` | Latest classification |
+| `GET` | `/api/v1/classifications/{url_id}/history` | Paginated classification history |
 
-```bash
-uv sync --all-packages
-uv run --package mfa-crawler playwright install chromium
-uv run --package mfa-crawler python -m mfa_crawler.smoke
-```
-
-**Docker:**
-
-```bash
-docker compose --profile workers build crawler-worker
-docker compose --profile workers run --rm crawler-worker \
-  uv run --package mfa-crawler python -m mfa_crawler.smoke
-```
-
-Prints a `SignalSnapshotPayload` JSON document (`schema_version: v1`) with five core DOM metrics.
-
-### 6. Optional — start worker containers
-
-```bash
-docker compose --profile workers up -d
-```
-
-| Worker | Current behavior |
-|--------|------------------|
-| `crawler-worker` | Polls Postgres for queued jobs; crawls, persists snapshots + evidence artifacts |
-| `ml-worker` | Heartbeat stub until scoring pipeline ships |
-
-```bash
-docker compose logs -f crawler-worker ml-worker
-```
+Planned (POC-5 / MVP): list/filter endpoints, review overrides, RAG chat.
 
 ---
 
@@ -207,22 +209,19 @@ Python dependencies are installed with **uv** inside each image. The monorepo us
 ## Day-to-day Docker commands
 
 ```bash
-# Follow API logs
-docker compose logs -f backend-api
+# Follow worker logs
+docker compose logs -f crawler-worker ml-worker
 
 # Rebuild after code changes
 docker compose build backend-api
-docker compose up -d backend-api
+docker compose --profile workers build ml-worker crawler-worker
+docker compose --profile workers up -d
 
 # Stop everything (keep database volume)
 docker compose down
 
 # Stop and remove database volume (fresh DB)
 docker compose down -v
-
-# Full rebuild from scratch
-docker compose build --no-cache
-docker compose up -d
 ```
 
 ---
@@ -230,66 +229,71 @@ docker compose up -d
 ## Troubleshooting
 
 **Port 5432 already in use**  
-Another Postgres instance is bound to 5432. Stop it or change the host port in `docker-compose.yml` (e.g. `"5433:5432"`) and update `DATABASE_URL` in `.env` if connecting from the host.
+Stop the other Postgres instance or change the host port in `docker-compose.yml`.
 
-**Container name conflict (`mfa-postgres`)**  
-A leftover container from an older setup may exist:
+**No classification after crawl completes**  
+Check `docker logs mfa-ml-worker`. Ensure `ml/artifacts/v1/` contains `model.pkl`, `calibrator.pkl`, and `metadata.json`.
 
+**Score job stuck**  
 ```bash
-docker rm -f mfa-postgres mfa-backend-api
-docker compose up -d
+docker exec -it mfa-postgres psql -U mfa -d mfa \
+  -c "SELECT id, status, error_message FROM score_jobs ORDER BY created_at DESC LIMIT 5;"
 ```
 
 **API exits on startup / migration errors**  
-Check logs: `docker compose logs backend-api`. Ensure `DATABASE_URL_SYNC` uses hostname `postgres` (not `localhost`) when running inside Compose.
-
-**`curl: connection refused` on :8000**  
-Wait for Postgres healthcheck and migration: `docker compose logs -f backend-api` until you see the uvicorn startup line.
+`docker compose logs backend-api` — run `uv run --directory backend alembic upgrade head` if needed.
 
 **Playwright / Chromium errors (crawler)**  
-Run `uv run --package mfa-crawler playwright install chromium` on the host, or rebuild the `crawler-worker` image. See [crawler/README.md](crawler/README.md).
+Rebuild `crawler-worker` or run `uv run --package mfa-crawler playwright install chromium`. See [crawler/README.md](crawler/README.md).
 
 ---
 
 ## Native development (API on host, Postgres in Docker)
 
-Use this when you want hot reload without rebuilding the API image.
-
 ```bash
-# 1. Postgres only
 docker compose up -d postgres
-
-# 2. Python workspace (repo root)
 uv sync --all-packages
-
-# 3. Backend env — localhost, not "postgres"
 cp backend/.env.example backend/.env
-
-# 4. Migrations + dev server
 uv run --directory backend alembic upgrade head
 uv run --directory backend uvicorn mfa.main:app --reload --port 8000
 ```
 
-API: http://localhost:8000/docs
+Workers on host (separate terminals):
+
+```bash
+export DATABASE_URL=postgresql+asyncpg://mfa:mfa@localhost:5432/mfa
+export ARTIFACT_DIR=ml/artifacts/v1
+uv run --package mfa-crawler python -m mfa_crawler.worker
+uv run --package mfa-ml python -m mfa_ml.worker
+```
 
 ### Tests
 
 ```bash
-# Backend unit tests
-uv run --directory backend pytest tests/test_normalizer.py tests/test_signals_schema.py -v
+# Unit tests (no Postgres)
+uv run --package mfa-backend pytest backend/tests/test_normalizer.py backend/tests/test_signals_schema.py -v
+uv run --package mfa-ml pytest ml/tests/ -q --ignore=ml/tests/test_consumer.py
+uv run --package mfa-crawler pytest crawler/tests/ -m "not integration" -v
 
-# Backend integration (requires Postgres on localhost:5432)
-MFA_RUN_INTEGRATION=1 uv run --directory backend pytest -v
-
-# Crawler unit tests
-uv run --directory crawler pytest -m "not integration" -v
-
-# Crawler browser integration
-PLAYWRIGHT_SMOKE=1 uv run --directory crawler pytest -m integration -v
+# Integration tests (Postgres on localhost:5432)
+MFA_RUN_INTEGRATION=1 uv run --package mfa-backend pytest backend/tests/ -v
+MFA_RUN_INTEGRATION=1 uv run --package mfa-crawler pytest crawler/tests/ -v
+MFA_RUN_INTEGRATION=1 uv run --package mfa-ml pytest ml/tests/test_consumer.py -v
 
 # Gold-label seed validation
 python scripts/seed/validate_gold_labels.py
 ```
+
+### ML evaluation (offline)
+
+```bash
+uv run --package mfa-ml python ml/scripts/evaluate.py \
+  --db-url postgresql://mfa:mfa@localhost:5432/mfa \
+  --gold-labels data/seed/gold_labels.jsonl \
+  --artifact-dir ml/artifacts/v1
+```
+
+Results: `ml/artifacts/v1/metrics.json`. See `ml/artifacts/v1/eval_notes.md` for pass/fail vs 85%/70% targets.
 
 ---
 
@@ -302,16 +306,14 @@ mfa-detection-platform/
 ├── uv.lock
 ├── .env.example            # Docker Compose env (repo root)
 ├── common/                 # mfa-common — shared logging          → common/README.md
-├── backend/                # FastAPI ingestion API                  → backend/README.md
-│   └── .env.example        # Native host dev only (localhost DB)
+├── backend/                # FastAPI ingestion + classifications API → backend/README.md
 ├── crawler/                # Playwright crawl worker                → crawler/README.md
-│   └── .env.example        # Optional CRAWL_* overrides (native)
-├── ml/                     # Rules + XGBoost scoring                → ml/README.md
+├── ml/                     # Rules + XGBoost scoring + ml-worker    → ml/README.md
 ├── data/seed/              # Gold-label training URLs
 └── docs/                   # Architecture, ADRs, roadmap, signals
 ```
 
-Details: [`AGENTS.md`](AGENTS.md)
+Details: [`AGENTS.md`](AGENTS.md) · Full local guide: [`docs/LOCAL_DEV_GUIDE.md`](docs/LOCAL_DEV_GUIDE.md)
 
 ---
 
@@ -331,11 +333,11 @@ Details: [`AGENTS.md`](AGENTS.md)
 
 Planning scope only — implementation uses production-oriented names (`SignalFeatures`, `v1`). See [`AGENTS.md`](AGENTS.md).
 
-| Milestone | Focus |
-|-----------|-------|
-| **Baseline** (6–8 wk) | Rules + XGBoost, single-persona crawl, Postgres, template explanations |
-| **MVP** (+10–12 wk) | Dual-persona, LLM explanations, RAG v1, review console, OpenSearch |
-| **Production** (+12–16 wk) | Near-real-time, pre-bid API, auto-retrain, SSO, multi-region |
+| Milestone | Focus | Frontend |
+|-----------|-------|----------|
+| **Baseline** (6–8 wk) | Rules + XGBoost, single-persona crawl, Postgres, template explanations | Spreadsheet / CSV export (POC-5.5) |
+| **MVP** (+10–12 wk) | Dual-persona, LLM explanations, RAG v1, review console, OpenSearch | **MVP-4.1** — Vite + React + TypeScript review UI |
+| **Production** (+12–16 wk) | Near-real-time, pre-bid API, auto-retrain, SSO, multi-region | SSO, multi-tenant hardening |
 
 Details: [`docs/ROADMAP.md`](docs/ROADMAP.md)
 

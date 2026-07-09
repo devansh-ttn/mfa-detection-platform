@@ -22,6 +22,7 @@ class Url(Base):
 
     crawl_jobs: Mapped[list["CrawlJob"]] = relationship(back_populates="url")
     signal_snapshots: Mapped[list["SignalSnapshot"]] = relationship(back_populates="url")
+    score_jobs: Mapped[list["ScoreJob"]] = relationship(back_populates="url")
     classifications: Mapped[list["Classification"]] = relationship(back_populates="url")
 
 
@@ -41,6 +42,9 @@ class CrawlJob(Base):
     source_batch_id: Mapped[str | None] = mapped_column(String(128), nullable=True, index=True)
     idempotency_key: Mapped[str] = mapped_column(String(128), nullable=False)
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # Populated on failure; drives skip-logic in claim_next_crawl_job.
+    # Values: "transient" | "not_found" | "http_error" | "timeout" | "robots_denied" | "invalid_url"
+    crawl_error_type: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
@@ -67,6 +71,33 @@ class SignalSnapshot(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     url: Mapped["Url"] = relationship(back_populates="signal_snapshots")
+    score_jobs: Mapped[list["ScoreJob"]] = relationship(back_populates="signal_snapshot")
+
+
+class ScoreJob(Base):
+    __tablename__ = "score_jobs"
+    __table_args__ = (
+        UniqueConstraint("signal_snapshot_id", name="uq_score_jobs_signal_snapshot_id"),
+        Index("ix_score_jobs_status_priority_created", "status", "priority", "created_at"),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("urls.id"), nullable=False
+    )
+    signal_snapshot_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("signal_snapshots.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="queued", index=True)
+    priority: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    url: Mapped["Url"] = relationship(back_populates="score_jobs")
+    signal_snapshot: Mapped["SignalSnapshot"] = relationship(back_populates="score_jobs")
 
 
 class Classification(Base):
@@ -85,6 +116,8 @@ class Classification(Base):
     top_signals: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
     explanation: Mapped[str] = mapped_column(Text, nullable=False, default="")
     evidence_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    classifier: Mapped[str] = mapped_column(String(32), nullable=False, default="xgboost")
+    schema_version: Mapped[str] = mapped_column(String(8), nullable=False, default="v1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     url: Mapped["Url"] = relationship(back_populates="classifications")

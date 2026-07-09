@@ -21,6 +21,8 @@ Docker Compose at **repo root** (`docker-compose.yml`) mirrors production servic
 
 Each app service has its own `Dockerfile` under `backend/`, `crawler/`, or `ml/`.
 
+Docker image and build-context optimization: **`.cursor/skills/mfa-docker/SKILL.md`** + **`.cursor/rules/mfa-docker.mdc`**.
+
 | Capability | AWS |
 |------------|-----|
 | API | API Gateway + Lambda/ECS |

@@ -65,6 +65,10 @@ services:
       ENV: ${ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      ARTIFACT_DIR: /artifacts
+      SCORE_POLL_INTERVAL_SEC: ${SCORE_POLL_INTERVAL_SEC:-5}
+    volumes:
+      - ./ml/artifacts/v1:/artifacts:ro
     depends_on:
       postgres:
         condition: service_healthy

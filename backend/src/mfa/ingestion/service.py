@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mfa.core.errors import MFAError
+from mfa.audit.writer import write_audit_event
 from mfa.db.models import CrawlJob, Url
 from mfa.ingestion.normalizer import NormalizedUrl, build_idempotency_key, normalize_url
 from mfa.ingestion.queue import CrawlJobMessage, QueueBackend, get_queue
@@ -141,6 +142,19 @@ class IngestionService:
         )
         session.add(job)
         await session.flush()
+
+        await write_audit_event(
+            session,
+            entity_type="url",
+            entity_id=str(url.id),
+            action="url.ingested",
+            payload={
+                "job_id": str(job.id),
+                "normalized_url": url.normalized_url,
+                "source_batch_id": source_batch_id,
+                "priority": priority,
+            },
+        )
 
         return IngestedJob(
             job_id=job.id,

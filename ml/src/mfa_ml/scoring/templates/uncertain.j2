@@ -1,0 +1,10 @@
+The classifier confidence is insufficient to make a determination for this page.
+{%- if top_signals %}
+
+Available signals (limited):
+{%- for sig in top_signals %}
+  • {{ sig.feature | replace("_", " ") | title }}: {{ sig.value }}
+{%- endfor %}
+{%- endif %}
+
+Conflicting or sparse signals prevented a confident classification. This placement has been routed to human review (HITL queue).

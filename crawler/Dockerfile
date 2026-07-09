@@ -1,26 +1,40 @@
 # syntax=docker/dockerfile:1
 
-FROM python:3.12-slim-bookworm
+ARG UV_VERSION=0.6.17
 
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+FROM python:3.12-slim-bookworm AS builder
+
+COPY --from=uv /uv /usr/local/bin/uv
 
 ENV UV_COMPILE_BYTECODE=1 \
-    UV_LINK_MODE=copy \
-    PYTHONUNBUFFERED=1
+    UV_LINK_MODE=copy
 
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
-COPY common/ /app/common/
-COPY crawler/ /app/crawler/
-COPY backend/pyproject.toml /app/backend/pyproject.toml
-COPY backend/src/ /app/backend/src/
-COPY ml/pyproject.toml /app/ml/pyproject.toml
+COPY common/ common/
+COPY backend/pyproject.toml backend/pyproject.toml
+COPY backend/src/ backend/src/
+COPY ml/pyproject.toml ml/pyproject.toml
+COPY crawler/pyproject.toml crawler/pyproject.toml
+COPY crawler/src/ crawler/src/
 
-RUN uv sync --frozen --package mfa-crawler --no-dev \
-    && uv run --package mfa-crawler playwright install-deps chromium \
-    && uv run --package mfa-crawler playwright install chromium
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --package mfa-crawler --no-dev --no-editable
 
-COPY crawler/src/ /app/crawler/src/
+FROM python:3.12-slim-bookworm AS runtime
 
-CMD ["uv", "run", "--package", "mfa-crawler", "python", "-m", "mfa_crawler.worker"]
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+COPY --from=builder /app/.venv /app/.venv
+
+RUN playwright install-deps chromium \
+    && playwright install chromium \
+    && rm -rf /var/lib/apt/lists/*
+
+CMD ["python", "-m", "mfa_crawler.worker"]

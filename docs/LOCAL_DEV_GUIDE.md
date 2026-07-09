@@ -34,25 +34,19 @@ The platform:
                 │  • Create crawl_jobs (queued)  │
                 │  • GET /jobs/{id}              │
                 │  • GET /signals/{url_id}       │
+                │  • GET /classifications/{id}   │
                 └───────────┬───────────────────┘
-                            │ Postgres (crawl_jobs table)
+                            │ Postgres (crawl_jobs)
             ┌───────────────▼───────────────┐
             │      crawler-worker            │
-            │  Playwright · Chromium         │
-            │  • Poll crawl_jobs (SKIP LOCK) │
-            │  • Navigate URL, extract DOM   │
-            │  • Write signal_snapshots      │
-            │  • Save evidence artifacts     │
+            │  • Crawl → signal_snapshots    │
+            │  • Enqueue score_jobs          │
             └───────────────┬───────────────┘
-                            │ Postgres (signal_snapshots)
+                            │ Postgres (score_jobs)
             ┌───────────────▼───────────────┐
-            │        ml-worker  (POC-3)      │
-            │  Rules + XGBoost + Calibrator  │
-            │  • Load signal features        │
-            │  • Score → tier + confidence   │
-            │  • SHAP top-5 signals          │
-            │  • Jinja2 explanation          │
-            │  • Write classifications row   │
+            │        ml-worker               │
+            │  • classify_snapshot()         │
+            │  • classifications + audit   │
             └───────────────────────────────┘
 ```
 
@@ -60,7 +54,7 @@ The platform:
 
 | Store | Role |
 |-------|------|
-| Postgres 16 | URLs, crawl jobs, signal snapshots (JSONB), classifications, audit events |
+| Postgres 16 | URLs, crawl/score jobs, signal snapshots, classifications, audit events |
 | `backend/evidence/` | Local crawl artifacts: screenshot, HTML, `dom_metrics.json` (S3 in MVP) |
 | `ml/artifacts/` | Trained model binaries (`model.pkl`, `calibrator.pkl`, `metadata.json`) |
 
@@ -77,8 +71,9 @@ mfa-detection-platform/
 │
 ├── backend/                    ← FastAPI API  (mfa-backend)
 │   ├── src/mfa/
-│   │   ├── api/v1/             ← HTTP endpoints (urls, jobs, signals)
-│   │   ├── ingestion/          ← normalizer, service, job poll
+│   │   ├── api/v1/             ← urls, jobs, signals, classifications
+│   │   ├── ingestion/          ← normalizer, job_poll, score_poll
+│   │   ├── audit/              ← append-only audit writer
 │   │   ├── scoring/            ← explanation templates (Jinja2)
 │   │   ├── schemas/            ← Pydantic models (signals, classifications)
 │   │   └── db/                 ← SQLAlchemy models, session
@@ -107,7 +102,8 @@ mfa-detection-platform/
 │   │   ├── scoring/            ← tier_mapper + ClassificationOutput
 │   │   ├── explainability/shap_explainer.py ← TreeSHAP top-5
 │   │   ├── data/loader.py      ← FeatureExtractor + domain split
-│   │   └── worker.py           ← Docker entry point (stub)
+│   │   ├── consumer.py         ← score job consumer
+│   │   └── worker.py           ← Docker entry point
 │   ├── scripts/
 │   │   ├── train.py            ← training CLI
 │   │   └── evaluate.py         ← evaluation CLI
@@ -189,7 +185,7 @@ docker compose ps
 docker compose --profile workers up -d
 ```
 
-This adds `crawler-worker` (polls crawl jobs, runs Playwright) and `ml-worker` (stub until score consumer is wired in POC-4).
+This adds `crawler-worker` (crawl + enqueue score jobs) and `ml-worker` (score consumer → classifications).
 
 ### Stop everything
 
@@ -767,14 +763,19 @@ docker compose restart backend-api
 
 ---
 
-## 13. What each branch is working on
+## 13. Branch strategy
 
 | Branch | Purpose |
 |--------|---------|
-| `develop` | Integration branch — merged POC milestones |
-| `cursor/poc-2-crawler-pipeline` | PR #2 — Crawler persist + worker + spike (POC-2.3–2.6) |
-| `cursor/poc-3-ml-scoring` | PR #3 — Rules + XGBoost + calibration + SHAP + templates (POC-3) |
-| `main` | Latest stable release |
+| `develop` | Active integration branch — all POC/Baseline work lands here |
+| `main` | Stable release (merge from `develop` when milestone exits) |
+
+Clone and work on `develop`:
+
+```bash
+git checkout develop
+git pull origin develop
+```
 
 ---
 
@@ -785,15 +786,21 @@ docker compose restart backend-api
 | P0 (schema, API, seed) | Backend | **Done** | Postgres schema, ingestion API, gold labels |
 | POC-1 (signal schema, batch ingest) | Backend | **Done** | `SignalFeatures`, `GET /signals`, ingest CLI |
 | POC-2.1–2.2 (Playwright, DOM parser) | Crawler | **Done** | `browser.py`, `dom_parser.py`, 5 metrics |
-| POC-2.3–2.6 (persist, worker, spike) | Crawler | **Done (PR #2)** | `persist.py`, `consumer.py`, 100-domain spike |
-| POC-3.1 (rules engine) | ML | **Done (PR #3)** | 4 rules on available features |
-| POC-3.2–3.3 (XGBoost, calibration) | ML | **Done (PR #3)** | Train CLI, isotonic calibrator |
-| POC-3.4–3.6 (tier mapper, SHAP, templates) | ML | **Done (PR #3)** | Full output contract |
-| POC-3.7 (train + evaluate on real data) | ML | **Pending** | Needs crawled gold labels in DB |
-| POC-4.1 (durable queue) | Backend | **Partial** | Postgres job poll done; Redis/SQS is MVP |
-| POC-4.2–4.3 (score consumer) | Workers | **Not started** | ml-worker is a stub |
-| POC-4.4–4.5 (audit, classifications API) | Backend | **Not started** | DB schema exists |
-| MVP (dual-persona, LLM, RAG, review UI) | All | **Not started** | See `docs/ROADMAP.md` |
+| POC-2.3–2.6 (persist, worker, spike) | Crawler | **Done** | `persist.py`, `consumer.py`, 100-domain spike |
+| POC-2 (error taxonomy) | Crawler | **Done** | `errors.py`, `crawl_error_type` skip logic (migration `002`) |
+| POC-3.1 (rules engine) | ML | **Done** | 4 rules on available features |
+| POC-3.2–3.3 (XGBoost, calibration) | ML | **Done** | Train CLI, isotonic calibrator, `artifacts/v1/` |
+| POC-3.4–3.6 (tier mapper, SHAP, templates) | ML | **Done** | `classify_snapshot()` + full output contract |
+| POC-3.7 (train + evaluate on real data) | ML | **Done (gap documented)** | `metrics.json` exists; **FAIL** vs 85%/70% — see `ml/artifacts/v1/eval_notes.md` |
+| POC-4.1 (durable queue) | Backend | **Done (Postgres)** | Crawl + score poll via `FOR UPDATE SKIP LOCKED`; Redis/SQS is MVP |
+| POC-4.2 (crawl → score enqueue) | Workers | **Done** | `score_poll.py`, crawler enqueues after `crawl_and_persist` |
+| POC-4.3 (ml-worker score consumer) | Workers | **Done** | `mfa_ml/consumer.py` → `classifications` rows |
+| POC-4.4 (audit writer) | Backend | **Done** | `url.ingested`, `crawl.completed`, `classification.scored` |
+| POC-4.5 (classifications API) | API | **Done** | `GET /classifications/{url_id}` + `/history` |
+| POC-5 (API polish, batch eval, demo) | All | **Not started** | List/filter endpoints, reviewer CSV, `e2e_crawl_score.sh` |
+| MVP (dual-persona, LLM, RAG, review UI) | All | **Not started** | Frontend at MVP-4.1; see `docs/ROADMAP.md` |
+
+**E2E path (live):** `POST /urls` → `crawl_jobs` → crawler-worker → `signal_snapshots` → `score_jobs` → ml-worker → `classifications` + `audit_events` → `GET /classifications/{url_id}`
 
 ---
 
