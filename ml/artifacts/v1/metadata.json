@@ -5,27 +5,16 @@
     "ads_above_fold",
     "ad_slots_count",
     "sticky_ad_count",
-    "content_word_count",
-    "refresh_events_60s",
-    "avg_refresh_interval_sec",
-    "content_uniqueness_score",
-    "author_page_exists",
-    "slideshow_pagination_depth",
-    "video_autoplay_count",
-    "page_load_ad_latency_ms",
-    "iframe_ad_count",
-    "native_ad_count",
-    "outbound_link_count",
-    "image_to_text_ratio"
+    "content_word_count"
   ],
-  "trained_at": "2026-07-07T10:41:22.715837+00:00",
+  "trained_at": "2026-07-09T21:03:32.146927+00:00",
   "xgb_version": "3.3.0",
-  "n_train_samples": 83,
+  "n_train_samples": 240,
   "class_distribution": {
-    "MFA": 28,
-    "Non_MFA": 55
+    "MFA": 80,
+    "Non_MFA": 160
   },
-  "scale_pos_weight": 1.9643,
+  "scale_pos_weight": 2.0,
   "hyperparams": {
     "n_estimators": 200,
     "max_depth": 4,
