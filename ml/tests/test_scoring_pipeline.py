@@ -147,5 +147,5 @@ class TestClassifySnapshot:
     def test_output_contract_fields(self, artifacts: ScoringArtifacts) -> None:
         signals = {"ad_to_content_ratio": 0.02, "content_word_count": 800}
         result = classify_snapshot(signals, evidence_hash="hash", artifacts=artifacts)
-        assert result.schema_version == "v1"
+        assert result.schema_version == "v1.1"
         assert isinstance(result.mfa_score, float)

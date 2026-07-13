@@ -38,8 +38,8 @@ def load_manifest() -> dict:
         return json.load(f)
 
 
-def load_urls_from_jsonl(*, limit: int | None) -> list[str]:
-    jsonl_path = SEED_DIR / "gold_labels.jsonl"
+def load_urls_from_jsonl(*, limit: int | None, path: Path | None = None) -> list[str]:
+    jsonl_path = path or (SEED_DIR / "gold_labels.jsonl")
     urls: list[str] = []
     with jsonl_path.open(encoding="utf-8") as f:
         for line in f:
@@ -147,6 +147,12 @@ def main() -> int:
         help="Ingest only the first N URLs from the source (smoke test)",
     )
     parser.add_argument(
+        "--gold-labels",
+        type=Path,
+        default=None,
+        help="Path to gold_labels.jsonl (default: data/seed/gold_labels.jsonl)",
+    )
+    parser.add_argument(
         "--url-file",
         type=Path,
         default=None,
@@ -189,6 +195,9 @@ def main() -> int:
     if args.url_file is not None and args.subset_domains is not None:
         print("ERROR: use either --url-file or --subset-domains, not both")
         return 1
+    if args.gold_labels is not None and args.url_file is not None:
+        print("ERROR: use either --gold-labels or --url-file, not both")
+        return 1
 
     manifest = load_manifest()
     source_batch_id = args.source_batch_id or manifest["version"]
@@ -204,7 +213,7 @@ def main() -> int:
                 f"from {SEED_DIR / 'gold_labels.jsonl'}"
             )
         else:
-            urls = load_urls_from_jsonl(limit=args.limit)
+            urls = load_urls_from_jsonl(limit=args.limit, path=args.gold_labels)
     except FileNotFoundError as exc:
         print(f"ERROR: {exc}")
         if args.url_file is not None:
@@ -228,7 +237,7 @@ def main() -> int:
             return 0
 
     if not urls:
-        source = args.url_file or (SEED_DIR / "gold_labels.jsonl")
+        source = args.url_file or args.gold_labels or (SEED_DIR / "gold_labels.jsonl")
         print(f"No URLs found in {source}")
         return 1
 

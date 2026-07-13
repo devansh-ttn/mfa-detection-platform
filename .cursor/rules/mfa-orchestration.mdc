@@ -1,0 +1,48 @@
+---
+description: Multi-agent phase orchestration and scope gates for MFA platform
+alwaysApply: false
+---
+
+# MFA Platform — Orchestration rules
+
+Reference: **`.cursor/plans/multi-agent-execution-plan.md`**, **`AGENTS.md`**
+
+## Current phase
+
+**MVP** — Baseline exit complete 2026-07-10. Start MVP per execution plan.
+
+Active sprint: `docs/plans/2026-08-mvp-execution.md`
+
+## Phase gates
+
+| Transition | Requirement |
+|------------|-------------|
+| POC → MVP | POC exit checklist in `docs/plans/2026-07-05-phased-build-plan.md` |
+| MVP → Production | MVP exit checklist + explicit user request for Production scope |
+
+## Agent selection
+
+| Layer | Agent |
+|-------|-------|
+| Phase kickoff / parallel tracks | `mfa-platform-orchestrator` |
+| API / workers | `mfa-backend-engineer` |
+| Crawler | `mfa-crawler-engineer` |
+| ML / eval | `mfa-ml-engineer` |
+| RAG | `mfa-rag-engineer` |
+| UI | `mfa-review-ui-engineer` |
+| Infra / AWS | `mfa-infra-engineer` |
+| ADRs / scope | `mfa-architect` |
+| Security gate (MVP AI+) | `mfa-security-reviewer` |
+
+## Parallel work
+
+- **Safe:** `infra/` + `crawler/` + `ml/` in separate branches
+- **Sequential:** API contract before UI; infra SQS before queue migration; citation validator before chat API
+
+## Branch naming
+
+`cursor/<phase>-<task-id>-<summary>` → PR into `develop`
+
+## Status updates
+
+On task completion, update status in `docs/plans/2026-07-05-phased-build-plan.md`.

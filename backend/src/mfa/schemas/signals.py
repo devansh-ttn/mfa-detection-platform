@@ -11,12 +11,14 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-# TODO(MVP): Bump version and extend SignalFeatures when enrichment + dual-persona
-# signals ship — see docs/SIGNALS.md and docs/ROADMAP.md.
-SIGNAL_SCHEMA_VERSION = "v1"
-SUPPORTED_SCHEMA_VERSIONS: frozenset[str] = frozenset({SIGNAL_SCHEMA_VERSION, "poc-v1"})
+from mfa.schemas.openapi_examples import SIGNAL_LIST_RESPONSE, SIGNAL_SNAPSHOT_RESPONSE
 
-Persona = Literal["direct", "referral"]
+# v1.1: 16 crawl features + dual-persona enrichment (referral_direct_delta_score).
+# Full 40–60 feature set deferred — see docs/SIGNALS.md and docs/ROADMAP.md.
+SIGNAL_SCHEMA_VERSION = "v1.1"
+SUPPORTED_SCHEMA_VERSIONS: frozenset[str] = frozenset({SIGNAL_SCHEMA_VERSION, "v1", "poc-v1"})
+
+Persona = Literal["direct", "referral", "dual"]
 
 CRAWL_FEATURE_NAMES: tuple[str, ...] = (
     "ad_to_content_ratio",
@@ -121,6 +123,8 @@ class SignalSnapshotPayload(BaseModel):
 class SignalSnapshotResponse(BaseModel):
     """API representation of a signal_snapshots row."""
 
+    model_config = ConfigDict(json_schema_extra={"examples": [SIGNAL_SNAPSHOT_RESPONSE]})
+
     snapshot_id: uuid.UUID
     url_id: uuid.UUID
     version: int
@@ -139,6 +143,8 @@ class SignalSnapshotResponse(BaseModel):
 
 
 class SignalSnapshotListResponse(BaseModel):
+    model_config = ConfigDict(json_schema_extra={"examples": [SIGNAL_LIST_RESPONSE]})
+
     url_id: uuid.UUID
     snapshots: list[SignalSnapshotResponse]
     total: int

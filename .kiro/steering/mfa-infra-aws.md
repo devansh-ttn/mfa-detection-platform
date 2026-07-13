@@ -1,0 +1,57 @@
+---
+inclusion: fileMatch
+fileMatchPattern: ['infra/**/*']
+---
+
+# MFA Platform — AWS infrastructure rules
+
+Reference: **`docs/ARCHITECTURE.md`**, plan Section 8
+
+## Local development
+
+Docker Compose at **repo root** (`docker-compose.yml`) mirrors production service boundaries:
+
+| Compose service | Production target |
+| --------------- | ----------------- |
+| `backend-api` | ECS Fargate / API Gateway |
+| `crawler-worker` | ECS Fargate crawl fleet |
+| `ml-worker` | ECS Fargate scoring workers |
+| `postgres` | RDS PostgreSQL 16 |
+
+Each app service has its own `Dockerfile` under `backend/`, `crawler/`, or `ml/`.
+
+Docker image and build-context optimization: **`.cursor/skills/mfa-docker/SKILL.md`** + **`.cursor/rules/mfa-docker.mdc`**.
+
+| Capability | AWS |
+|------------|-----|
+| API | API Gateway + Lambda/ECS |
+| Crawler workers | ECS Fargate + SQS (standard + FIFO priority) |
+| Batch | Step Functions + EventBridge |
+| DB | RDS PostgreSQL 16 |
+| Cache | ElastiCache Redis |
+| Vector | OpenSearch Serverless |
+| Artifacts | S3 + Object Lock (audit) |
+| Secrets | Secrets Manager + KMS |
+| LLM | Bedrock (Claude) |
+
+## Naming
+
+`mfa-{env}-{service}` (e.g. `mfa-dev-crawler-queue`)
+
+## Environments
+
+`dev` · `staging` · `prod` — separate Terraform state per env. Local Compose uses `ENV=local` in app config (not a deploy env).
+
+## Scale tiers
+
+| URLs/month | Adjustment |
+|------------|------------|
+| 50K–500K | Single region, 5–10 crawlers |
+| 500K–5M | Auto-scaling fleet, tiered crawl depth |
+| 5M+ | Multi-region, domain dedup, hot/warm/cold queues |
+
+## Do not
+
+- Hardcode account IDs or ARNs in application code
+- Store Terraform state locally without remote backend
+- Open RDS/OpenSearch to 0.0.0.0/0

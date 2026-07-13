@@ -5,6 +5,7 @@ from __future__ import annotations
 import uuid
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import structlog
 from mfa.db.models import SignalSnapshot, Url
@@ -14,7 +15,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from mfa_crawler.artifacts import write_evidence_artifacts
-from mfa_crawler.crawl import CrawlResult, crawl_url
+from mfa_crawler.crawl import CrawlResult, crawl_url, load_dual_persona_enabled
 
 logger = structlog.get_logger(__name__)
 
@@ -49,6 +50,7 @@ async def persist_signal_snapshot(
     crawl_result: CrawlResult | None = None,
     write_artifacts: bool = True,
     evidence_base_dir: Path | None = None,
+    enrichment: dict[str, Any] | None = None,
 ) -> PersistedSnapshot:
     """Insert a versioned signal_snapshots row with computed evidence_hash."""
     url = await session.get(Url, url_id)
@@ -56,6 +58,10 @@ async def persist_signal_snapshot(
         raise LookupError(f"url_id not found: {url_id}")
 
     signals = payload.to_db()
+    if enrichment:
+        signals.update(enrichment)
+    elif crawl_result is not None and crawl_result.enrichment:
+        signals.update(crawl_result.enrichment)
     evidence_hash = compute_evidence_hash(signals)
     version = await next_snapshot_version(session, url_id)
 
@@ -121,7 +127,9 @@ async def crawl_and_persist(
             raise LookupError(f"url_id not found: {url_id}")
         target_url = url.url
 
-    crawl_result = await crawl_url(target_url, persona=persona)
+    dual_persona = load_dual_persona_enabled()
+    crawl_result = await crawl_url(target_url, persona=persona, dual_persona=dual_persona)
+    resolved_persona: Persona = "dual" if dual_persona else persona  # type: ignore[assignment]
 
     async with factory() as session:
         result = await persist_signal_snapshot(
@@ -129,7 +137,7 @@ async def crawl_and_persist(
             url_id=url_id,
             payload=crawl_result.payload,
             crawl_duration_sec=crawl_result.duration_sec,
-            persona=persona,
+            persona=resolved_persona,
             crawl_result=crawl_result,
             write_artifacts=write_artifacts,
             evidence_base_dir=evidence_base_dir,

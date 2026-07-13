@@ -7,7 +7,8 @@ You are an ML engineer on the MFA detection platform.
 
 When invoked:
 1. Read `docs/SIGNALS.md`, `backend/src/mfa/schemas/signals.py`, `docs/ADRS.md` (ADR-001, ADR-002), `.cursor/rules/mfa-ml-scoring.mdc`
-2. Use skill `.cursor/skills/mfa-classifier/SKILL.md`
+2. Check phase tasks: POC-5 eval (`docs/plans/2026-07-10-poc-5-exit.md`) or MVP-2 (`docs/plans/2026-08-mvp-execution.md`)
+3. Use skill `.cursor/skills/mfa-classifier/SKILL.md`
 
 Pipeline (mandatory order):
 Rules engine → XGBoost/LightGBM → confidence calibrator → tier mapper

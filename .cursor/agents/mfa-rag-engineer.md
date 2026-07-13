@@ -7,7 +7,8 @@ You are a RAG engineer on the MFA detection platform.
 
 When invoked:
 1. Read `docs/RAG.md`, `docs/GUARDRAILS.md`, `.cursor/rules/mfa-rag.mdc`
-2. Use skill `.cursor/skills/mfa-rag-bot/SKILL.md`
+2. Check MVP-3 tasks in `docs/plans/2026-08-mvp-execution.md` (blocked until POC exit)
+3. Use skill `.cursor/skills/mfa-rag-bot/SKILL.md`
 
 Mandatory patterns:
 - Retrieve-first: no LLM call without evidence pack

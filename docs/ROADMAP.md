@@ -20,18 +20,33 @@ Milestone definitions for **planning and scoping** only. Implementation code use
 
 **In:** Near-real-time (&lt;5 min), pre-bid API, monthly auto-retrain, RAG v2 (similar domains, change detection), drift monitoring, shadow mode, SSO/RBAC, multi-region DR, cost attribution.
 
-## Current default
+## Current default (2026-07-10)
 
-Unless the user specifies otherwise, implement **Baseline milestone** scope first. Reference `.cursor/plans/mfa_platform_architecture_48645023.plan.md` for full detail.
+**Baseline (POC) engineering exit complete.** **MVP implementation in progress** — dual-persona crawl, RAG v1, review console, Terraform infra.
+
+| Phase | Status |
+|-------|--------|
+| P0 + POC-1 → POC-5 | ✅ Complete (metrics/crawl gaps documented) |
+| **MVP** | 🟡 In progress — infra, RAG, review UI, HITL APIs |
+| Production | Blocked on MVP exit |
+
+**Plans:**
+- Active sprint: [`docs/plans/2026-07-10-poc-5-exit.md`](plans/2026-07-10-poc-5-exit.md)
+- MVP execution: [`docs/plans/2026-08-mvp-execution.md`](plans/2026-08-mvp-execution.md)
+- Production: [`docs/plans/2026-11-production-execution.md`](plans/2026-11-production-execution.md)
+- Multi-agent orchestration: [`.cursor/plans/multi-agent-execution-plan.md`](../.cursor/plans/multi-agent-execution-plan.md)
 
 **Task breakdown:** [`docs/plans/2026-07-05-phased-build-plan.md`](plans/2026-07-05-phased-build-plan.md) — phased tasks with IDs (POC-* IDs are planning labels, not code prefixes).
+
+Unless the user specifies otherwise, implement **POC-5** scope. Do not start MVP until POC exit checklist passes.
 
 ## Open plan todos
 
 1. ~~Validate gold-label URL dataset with Ad Ops~~ — automated validation done; formal sign-off pending
-2. Playwright crawler on 100 known MFA/non-MFA domains (build plan: POC-2)
+2. ~~Playwright crawler on 100 domains~~ — POC-2.5 done (84% success)
 3. ~~Signal feature schema + Postgres JSONB~~ — `SignalFeatures` in `schemas/signals.py`, `docs/SIGNALS.md`
-4. Train rules + XGBoost; target precision ≥85%, recall ≥70%
-5. RAG bot v1 with hybrid retrieval + citation validator — MVP
-6. Reviewer console with override workflow + audit logging — MVP
-7. Shadow-mode scoring before blocklist export — MVP
+4. ~~Train rules + XGBoost~~ — artifacts in `ml/artifacts/v1/`; precision/recall gap documented — remediate in MVP-2.1
+5. ~~**POC-5** — batch eval, list classifications API, reviewer CSV, OpenAPI polish~~ — **Done** (2026-07-10)
+6. RAG bot v1 with hybrid retrieval + citation validator — MVP (`docs/plans/2026-08-mvp-execution.md`)
+7. Reviewer console with override workflow + audit logging — MVP
+8. Shadow-mode scoring before blocklist export — MVP

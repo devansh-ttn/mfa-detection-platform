@@ -1,0 +1,45 @@
+---
+inclusion: fileMatch
+fileMatchPattern: ['backend/**/*.py']
+---
+
+# MFA Platform — API rules
+
+## Framework
+
+FastAPI async handlers. OpenAPI docs at `/docs`. Pydantic models for request/response.
+
+## Key endpoints
+
+| Method | Path | Status | Purpose |
+|--------|------|--------|---------|
+| POST | `/api/v1/urls` | implemented | Submit URL(s) for scoring |
+| GET | `/api/v1/jobs/{job_id}` | implemented | Crawl job status |
+| GET | `/api/v1/signals/{url_id}` | implemented | Signal snapshots (versioned, paginated) |
+| GET | `/api/v1/classifications` | implemented | List latest classification per URL (filter by tier, domain, confidence) |
+| GET | `/api/v1/classifications/{url_id}` | implemented | Latest classification |
+| GET | `/api/v1/classifications/{url_id}/history` | implemented | Paginated classification history |
+| GET | `/api/v1/reviews/queue` | implemented | HITL review queue |
+| POST | `/api/v1/reviews` | implemented | Reviewer override |
+| POST | `/api/v1/chat` | implemented | RAG bot query |
+| GET | `/api/v1/blocklist` | implemented | Export blocklist segment |
+| GET | `/api/v1/prebid/lookup` | implemented | Pre-bid domain cache lookup (Production stub) |
+
+> Planned endpoints: check `docs/ROADMAP.md` before implementing.
+
+## Patterns
+
+- Ingestion returns `job_id` immediately; crawl/score async via queue
+- Idempotency key: normalized URL hash + `source_batch_id`
+- Pagination on list endpoints; filter by `tier`, `domain`, `confidence`
+- Structured errors: `{ "error": "...", "code": "...", "details": {} }`
+
+## Auth
+
+> **TODO(MVP):** API Gateway + Cognito/Okta. RBAC middleware before handlers.
+
+## Do not
+
+- Block HTTP on crawl completion (return job status instead)
+- Return raw S3 URLs without signed URL or proxy
+- Expose internal queue message formats in public API

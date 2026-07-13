@@ -20,6 +20,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from mfa.db.models import Classification, ScoreJob
+from mfa.ingestion.sqs_transport import publish_score_job, sqs_enabled
 
 logger = structlog.get_logger(__name__)
 
@@ -66,6 +67,35 @@ async def enqueue_score_job(
         job_id=str(job.id),
         url_id=str(url_id),
         signal_snapshot_id=str(signal_snapshot_id),
+    )
+    if sqs_enabled():
+        publish_score_job(
+            job_id=job.id,
+            url_id=url_id,
+            signal_snapshot_id=signal_snapshot_id,
+            priority=priority,
+        )
+    return job
+
+
+async def claim_score_job_by_id(session: AsyncSession, job_id: uuid.UUID) -> ScoreJob | None:
+    """Claim a specific queued score job (SQS consumer path)."""
+    job = await session.scalar(
+        select(ScoreJob)
+        .where(ScoreJob.id == job_id)
+        .where(ScoreJob.status == "queued")
+        .with_for_update(skip_locked=True)
+    )
+    if job is None:
+        return None
+    job.status = "running"
+    await session.flush()
+    logger.info(
+        "score_job_claimed",
+        job_id=str(job.id),
+        url_id=str(job.url_id),
+        signal_snapshot_id=str(job.signal_snapshot_id),
+        source="sqs",
     )
     return job
 

@@ -1,0 +1,20 @@
+# Copy to terraform.tfvars and adjust for your AWS account.
+# Do not commit terraform.tfvars (may contain account-specific overrides).
+
+project_name = "mfa"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+tags = {
+  team = "mfa-platform"
+}
+
+# Dev defaults — see variables.tf for all options
+rds_instance_class       = "db.t4g.medium"
+rds_allocated_storage_gb = 20
+rds_multi_az             = false
+rds_deletion_protection  = false
+rds_skip_final_snapshot  = true
+
+ecs_task_cpu    = "512"
+ecs_task_memory = "1024"

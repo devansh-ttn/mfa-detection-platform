@@ -2,6 +2,8 @@ import uuid
 from dataclasses import dataclass
 from typing import Protocol
 
+from mfa.ingestion.sqs_transport import publish_crawl_job
+
 
 @dataclass(frozen=True)
 class CrawlJobMessage:
@@ -18,8 +20,8 @@ class QueueBackend(Protocol):
 class InMemoryQueue:
     """In-process queue retained for API tests and local introspection.
 
-    The crawler-worker consumes jobs by polling Postgres (`job_poll.py`), not this
-    queue. TODO(MVP): replace with SQS per docs/ROADMAP.md (MVP-1.3).
+    Workers consume jobs via Postgres poll or SQS (MVP-1.3). Postgres ``crawl_jobs``
+    remains the durable source of truth; SQS is the worker notification channel.
     """
 
     def __init__(self) -> None:
@@ -29,13 +31,38 @@ class InMemoryQueue:
         self.messages.append(message)
 
 
+class SqsQueueBackend:
+    """Publish crawl jobs to SQS batch or FIFO priority queue (MVP-1.3)."""
+
+    def __init__(self) -> None:
+        from mfa.ingestion.sqs_transport import sqs_enabled
+
+        self._enabled = sqs_enabled()
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    async def enqueue_crawl(self, message: CrawlJobMessage) -> None:
+        if not self.enabled:
+            return
+        publish_crawl_job(
+            job_id=message.job_id,
+            url_id=message.url_id,
+            normalized_url=message.normalized_url,
+            priority=message.priority,
+        )
+
+
 _queue: QueueBackend | None = None
 
 
 def get_queue() -> QueueBackend:
     global _queue
     if _queue is None:
-        _queue = InMemoryQueue()
+        from mfa.ingestion.sqs_transport import sqs_enabled
+
+        _queue = SqsQueueBackend() if sqs_enabled() else InMemoryQueue()
     return _queue
 
 

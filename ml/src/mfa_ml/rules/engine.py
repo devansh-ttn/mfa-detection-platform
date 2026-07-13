@@ -7,8 +7,7 @@ Available crawl features (5 populated in POC):
     ad_to_content_ratio, ads_above_fold, ad_slots_count,
     sticky_ad_count, content_word_count
 
-Refresh-based rules (refresh_events_60s, avg_refresh_interval_sec) are
-deferred until 60s dwell is wired — TODO(MVP).
+Refresh-based rules use ``refresh_events_60s`` when dwell is enabled (MVP-1.5).
 
 See docs/SIGNALS.md for feature definitions and null conventions.
 """
@@ -65,6 +64,7 @@ class RulesEngine:
             self._r1_high_ad_density(features)
             or self._r2_ads_above_fold(features)
             or self._r3_thin_content_heavy_ads(features)
+            or self._r5_aggressive_refresh(features)
             or self._r4_clean_publisher(features)
         )
         if match:
@@ -150,6 +150,31 @@ class RulesEngine:
                 explanation_hint=(
                     f"Sparse content ({words} words) with {slots} ad slots "
                     f"is a strong MFA signal."
+                ),
+            )
+        return None
+
+    def _r5_aggressive_refresh(self, f: dict[str, Any]) -> RuleMatch | None:
+        """R5 — High refresh rate during dwell → MFA_Medium.
+
+        Condition: refresh_events_60s >= 3
+        """
+        refresh_count = f.get("refresh_events_60s")
+        if refresh_count is None:
+            return None
+        if refresh_count >= 3:
+            avg_interval = f.get("avg_refresh_interval_sec")
+            return RuleMatch(
+                rule_id="R5",
+                tier="MFA_Medium",
+                mfa_score=0.72,
+                top_signals=[
+                    _sig("refresh_events_60s", refresh_count, 0.50, 1),
+                    _sig("avg_refresh_interval_sec", avg_interval, 0.35, 2),
+                ],
+                explanation_hint=(
+                    f"{refresh_count} ad refresh events detected during dwell "
+                    f"(avg interval {avg_interval}s)."
                 ),
             )
         return None

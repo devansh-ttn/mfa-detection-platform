@@ -7,12 +7,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from mfa.core.errors import NotFoundError
 from mfa.db.models import SignalSnapshot, Url
 from mfa.db.session import get_db_session
+from mfa.schemas.errors import COMMON_ERROR_RESPONSES
 from mfa.schemas.signals import SignalSnapshotListResponse, SignalSnapshotResponse
 
 router = APIRouter(tags=["signals"])
 
 
-@router.get("/signals/{url_id}", response_model=SignalSnapshotListResponse)
+@router.get(
+    "/signals/{url_id}",
+    response_model=SignalSnapshotListResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
 async def list_signal_snapshots(
     url_id: uuid.UUID,
     session: AsyncSession = Depends(get_db_session),

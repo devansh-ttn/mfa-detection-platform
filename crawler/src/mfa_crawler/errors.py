@@ -20,6 +20,7 @@ from typing import Literal
 CrawlErrorType = Literal[
     "transient",       # Network hiccup or unknown error; eligible for retry
     "not_found",       # HTTP 404 / 410 — page definitively does not exist
+    "unreachable",     # DNS / host resolution failure (e.g. ERR_NAME_NOT_RESOLVED)
     "http_error",      # Other non-2xx HTTP status (4xx/5xx)
     "timeout",         # Page load exceeded configured timeout_ms
     "robots_denied",   # robots.txt disallows this URL  — TODO(MVP)
@@ -29,6 +30,7 @@ CrawlErrorType = Literal[
 # Error types that will never self-resolve; no automatic retry.
 PERMANENT_ERROR_TYPES: frozenset[str] = frozenset({
     "not_found",
+    "unreachable",
     "invalid_url",
     "robots_denied",
 })
@@ -85,3 +87,26 @@ class CrawlInvalidUrlError(CrawlError):
     """
 
     error_type: CrawlErrorType = "invalid_url"
+
+
+class CrawlUnreachableError(CrawlError):
+    """DNS or host resolution failure — domain does not resolve."""
+
+    error_type: CrawlErrorType = "unreachable"
+
+    def __init__(self, url: str, cause: Exception | str) -> None:
+        self.cause_detail = str(cause)
+        super().__init__(f"host unreachable for {url!r}: {cause}")
+
+
+def classify_playwright_goto_error(exc: Exception, url: str) -> CrawlError | Exception:
+    """Map Playwright navigation failures to typed ``CrawlError`` when possible."""
+    if isinstance(exc, CrawlError):
+        return exc
+
+    msg = str(exc).lower()
+    if "invalid url" in msg or "err_invalid_url" in msg:
+        return CrawlInvalidUrlError(f"invalid URL {url!r}: {exc}")
+    if "err_name_not_resolved" in msg:
+        return CrawlUnreachableError(url, exc)
+    return exc

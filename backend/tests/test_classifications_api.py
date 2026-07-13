@@ -170,3 +170,47 @@ async def test_list_classification_history(client) -> None:
     assert body["url_id"] == str(url_id)
     assert body["total"] == 1
     assert len(body["classifications"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_list_classifications_index(client) -> None:
+    ac, session_factory = client
+    url_id, _ = await _seed_classification(session_factory)
+
+    response = await ac.get("/api/v1/classifications", params={"tier": "MFA_High"})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["total"] == 1
+    assert len(body["classifications"]) == 1
+    item = body["classifications"][0]
+    assert item["url_id"] == str(url_id)
+    assert item["domain"] == "example.com"
+    assert item["tier"] == "MFA_High"
+
+
+@pytest.mark.asyncio
+async def test_list_classifications_invalid_tier(client) -> None:
+    ac, _ = client
+    response = await ac.get("/api/v1/classifications", params={"tier": "InvalidTier"})
+    assert response.status_code == 400
+    assert response.json()["code"] == "validation_error"
+
+
+@pytest.mark.asyncio
+async def test_list_classifications_domain_filter(client) -> None:
+    ac, session_factory = client
+    await _seed_classification(session_factory)
+
+    response = await ac.get(
+        "/api/v1/classifications",
+        params={"domain": "example.com", "tier": "MFA_High"},
+    )
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+
+    empty = await ac.get(
+        "/api/v1/classifications",
+        params={"domain": "missing.example", "tier": "MFA_High"},
+    )
+    assert empty.status_code == 200
+    assert empty.json()["total"] == 0

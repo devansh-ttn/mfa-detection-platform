@@ -1,4 +1,60 @@
+# MFA Detection Platform — local Docker Compose
+#
+# Full stack (Postgres, Redis, API, crawler + ML workers):
+#   docker compose up -d --build
+#
+# Batch eval / faster crawls — multiple crawler workers (Postgres SKIP LOCKED):
+#   CRAWL_WORKER_REPLICAS=3 docker compose up -d --scale crawler-worker=3
+#   # or: ./scripts/dev/up-stack.sh
+#
+# Core only (no workers):
+#   docker compose up -d postgres redis backend-api
+#
+# Per service (dependencies start automatically via depends_on):
+#   docker compose up -d <service>
+#   docker compose down <service>
+#
+# Optional LocalStack (S3/SQS emulation):
+#   docker compose --profile localstack up -d localstack
+#   docker compose --profile localstack down localstack
+#
+# Stop everything:
+#   docker compose down          # keep volumes
+#   docker compose down -v       # wipe Postgres / LocalStack data
+
 services:
+  redis:
+    image: redis:7-alpine
+    container_name: mfa-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  localstack:
+    profiles: ["localstack"]
+    image: localstack/localstack:3
+    container_name: mfa-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      SERVICES: s3,sqs
+      DEBUG: ${LOCALSTACK_DEBUG:-0}
+      DOCKER_HOST: unix:///var/run/docker.sock
+    volumes:
+      - mfa_localstack_data:/var/lib/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
   postgres:
     image: postgres:16-alpine
     container_name: mfa-postgres
@@ -29,34 +85,76 @@ services:
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
       DATABASE_URL_SYNC: ${DATABASE_URL_SYNC:-postgresql+psycopg://mfa:mfa@postgres:5432/mfa}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      SQS_BATCH_QUEUE_URL: ${SQS_BATCH_QUEUE_URL:-}
+      SQS_CRAWL_QUEUE_URL: ${SQS_CRAWL_QUEUE_URL:-}
+      SQS_PRIORITY_QUEUE_URL: ${SQS_PRIORITY_QUEUE_URL:-}
+      EVIDENCE_DIR: /app/evidence
+      COGNITO_USER_POOL_ID: ${COGNITO_USER_POOL_ID:-}
+      COGNITO_APP_CLIENT_ID: ${COGNITO_APP_CLIENT_ID:-}
+      COGNITO_REGION: ${COGNITO_REGION:-us-east-1}
+      MFA_REQUIRE_AUTH: ${MFA_REQUIRE_AUTH:-0}
+      MFA_SHADOW_MODE: ${MFA_SHADOW_MODE:-1}
+      SQS_BATCH_QUEUE_URL: ${SQS_BATCH_QUEUE_URL:-}
+      SQS_CRAWL_QUEUE_URL: ${SQS_CRAWL_QUEUE_URL:-}
+      SQS_SCORE_QUEUE_URL: ${SQS_SCORE_QUEUE_URL:-}
+      SQS_PRIORITY_QUEUE_URL: ${SQS_PRIORITY_QUEUE_URL:-}
+      OPENSEARCH_ENDPOINT: ${OPENSEARCH_ENDPOINT:-}
+      OPENSEARCH_INDEX: ${OPENSEARCH_INDEX:-mfa-rag-v1}
+    volumes:
+      - ./backend/evidence:/app/evidence:ro
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
     restart: unless-stopped
 
   crawler-worker:
-    profiles: ["workers"]
     build:
       context: .
       dockerfile: crawler/Dockerfile
-    container_name: mfa-crawler-worker
+    # No container_name — required for `docker compose up --scale crawler-worker=N`.
+    # Workers claim jobs via Postgres FOR UPDATE SKIP LOCKED (see job_poll.py).
     environment:
       ENV: ${ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       EVIDENCE_DIR: /app/evidence
       CRAWL_POLL_INTERVAL_SEC: ${CRAWL_POLL_INTERVAL_SEC:-5}
+      CRAWL_DUAL_PERSONA: ${CRAWL_DUAL_PERSONA:-true}
+      CRAWL_DWELL_SEC: ${CRAWL_DWELL_SEC:-10}
+      CRAWL_REFERRER_SOURCE: ${CRAWL_REFERRER_SOURCE:-outbrain}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      SQS_BATCH_QUEUE_URL: ${SQS_BATCH_QUEUE_URL:-}
+      SQS_CRAWL_QUEUE_URL: ${SQS_CRAWL_QUEUE_URL:-}
+      SQS_PRIORITY_QUEUE_URL: ${SQS_PRIORITY_QUEUE_URL:-}
     volumes:
       - ./backend/evidence:/app/evidence
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       backend-api:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
 
   ml-worker:
-    profiles: ["workers"]
     build:
       context: .
       dockerfile: ml/Dockerfile
@@ -65,16 +163,64 @@ services:
       ENV: ${ENV:-local}
       LOG_LEVEL: ${LOG_LEVEL:-INFO}
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       ARTIFACT_DIR: /artifacts
       SCORE_POLL_INTERVAL_SEC: ${SCORE_POLL_INTERVAL_SEC:-5}
+      AWS_ENDPOINT_URL: ${AWS_ENDPOINT_URL:-}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION:-us-east-1}
+      SQS_BATCH_QUEUE_URL: ${SQS_BATCH_QUEUE_URL:-}
+      SQS_CRAWL_QUEUE_URL: ${SQS_CRAWL_QUEUE_URL:-}
+      SQS_SCORE_QUEUE_URL: ${SQS_SCORE_QUEUE_URL:-}
+      SQS_PRIORITY_QUEUE_URL: ${SQS_PRIORITY_QUEUE_URL:-}
+      OPENSEARCH_ENDPOINT: ${OPENSEARCH_ENDPOINT:-}
+      OPENSEARCH_INDEX: ${OPENSEARCH_INDEX:-mfa-rag-v1}
     volumes:
       - ./ml/artifacts/v1:/artifacts:ro
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       backend-api:
-        condition: service_started
+        condition: service_healthy
+    restart: unless-stopped
+
+  indexer-worker:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: mfa-indexer-worker
+    command: ["python", "-m", "mfa.rag.worker"]
+    environment:
+      ENV: ${ENV:-local}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://mfa:mfa@postgres:5432/mfa}
+      OPENSEARCH_ENDPOINT: ${OPENSEARCH_ENDPOINT:-}
+      OPENSEARCH_INDEX: ${OPENSEARCH_INDEX:-mfa-rag-v1}
+      INDEX_POLL_INTERVAL_SEC: ${INDEX_POLL_INTERVAL_SEC:-30}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      backend-api:
+        condition: service_healthy
+    profiles: ["opensearch"]
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mfa-frontend
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_API_URL: ""
+      VITE_PROXY_TARGET: http://backend-api:8000
+    depends_on:
+      backend-api:
+        condition: service_healthy
     restart: unless-stopped
 
 volumes:
   mfa_postgres_data:
+  mfa_localstack_data:

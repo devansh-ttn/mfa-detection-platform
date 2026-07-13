@@ -25,12 +25,33 @@ description: Navigates the MFA detection platform architecture, docs, phases, an
 | Containers | `*/Dockerfile`, `docker-compose.yml`, `.dockerignore` | `mfa-docker.mdc` |
 | UI | `frontend/src/` | `mfa-review-ui.mdc` |
 
-## Current milestone: Baseline
+## Current milestone: MVP (Baseline exit complete 2026-07-10)
 
-Single-persona crawl · rules + XGBoost · async crawl→score workers · classifications API · Postgres
-POC-5 polish / dual-persona / LLM / RAG / review console → next (MVP for UI)
+**Done:** P0, POC-1 → POC-5 (batch eval in `ml/artifacts/v1/batch_eval_report.json`)  
+**Next:** MVP-1 per `docs/plans/2026-08-mvp-execution.md`
 
+| Sprint doc | Focus |
+|------------|-------|
+| `docs/plans/2026-07-10-poc-5-exit.md` | Current — API + batch eval |
+| `docs/plans/2026-08-mvp-execution.md` | Dual-persona, RAG, review UI |
+| `docs/plans/2026-11-production-execution.md` | NRT, MLOps, enterprise |
+
+**Orchestration:** `.cursor/plans/multi-agent-execution-plan.md`  
 Full HLD: `.cursor/plans/mfa_platform_architecture_48645023.plan.md`
+
+## Agent routing (quick)
+
+| Work type | Agent |
+|-----------|-------|
+| Phase / sprint planning | `mfa-platform-orchestrator` |
+| API, workers, audit | `mfa-backend-engineer` |
+| Crawler, DOM, personas | `mfa-crawler-engineer` |
+| Train, eval, scoring | `mfa-ml-engineer` |
+| RAG, chat, OpenSearch | `mfa-rag-engineer` |
+| Review / bot UI | `mfa-review-ui-engineer` |
+| Terraform, AWS, compose | `mfa-infra-engineer` |
+| ADRs, scope gates | `mfa-architect` |
+| AI/auth audit gate | `mfa-security-reviewer` |
 
 ## Docker optimization
 

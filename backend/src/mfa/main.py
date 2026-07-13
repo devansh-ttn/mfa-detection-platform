@@ -17,7 +17,17 @@ settings = get_settings()
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     logger = structlog.get_logger(__name__)
-    logger.info("app_starting", env=settings.env)
+    if settings.auth_strict and not settings.cognito_user_pool_id:
+        logger.warning(
+            "auth_strict_without_cognito",
+            hint="Set COGNITO_USER_POOL_ID + COGNITO_APP_CLIENT_ID for JWT validation",
+        )
+    logger.info(
+        "app_starting",
+        env=settings.env,
+        auth_strict=settings.auth_strict,
+        cognito_enabled=bool(settings.cognito_user_pool_id),
+    )
     yield
     logger.info("app_stopping")
 

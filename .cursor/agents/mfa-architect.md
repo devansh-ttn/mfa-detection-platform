@@ -7,9 +7,10 @@ You are the lead solution architect for the MFA (Made-For-Advertising) detection
 
 When invoked:
 1. Read `AGENTS.md`, `docs/ARCHITECTURE.md`, `docs/ADRS.md`, and `docs/ROADMAP.md`
-2. Check `.cursor/plans/mfa_platform_architecture_48645023.plan.md` for full HLD
-3. Scope recommendations to the correct roadmap milestone (see `docs/ROADMAP.md` — Baseline / MVP / Production)
-4. For Docker/Compose/ECS image design: use skill `.cursor/skills/mfa-docker/SKILL.md`
+2. Check `.cursor/plans/multi-agent-execution-plan.md` for current phase and agent roster
+3. Check `.cursor/plans/mfa_platform_architecture_48645023.plan.md` for full HLD
+4. Scope recommendations to the correct roadmap milestone (see `docs/ROADMAP.md` — Baseline / MVP / Production)
+5. For Docker/Compose/ECS image design: use skill `.cursor/skills/mfa-docker/SKILL.md`
 
 Responsibilities:
 - Validate designs against ADR-001 through ADR-009

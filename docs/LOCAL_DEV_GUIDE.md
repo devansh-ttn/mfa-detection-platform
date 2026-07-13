@@ -170,16 +170,18 @@ uv run --package mfa-crawler playwright install chromium
 
 ## 6. Run the full stack with Docker
 
-### Step 6.1 — Build and start core services
+All services are defined in `docker-compose.yml`. Use plain `docker compose up` / `docker compose down` — no profiles except optional LocalStack.
 
-Starts **Postgres** and **backend-api** (migrations run on API startup).
+### Step 6.1 — Build and start the full stack
+
+Starts **Postgres**, **Redis**, **backend-api**, **crawler-worker**, and **ml-worker**. Migrations run on API startup; workers wait until the API healthcheck passes.
 
 ```bash
 docker compose build
 docker compose up -d
 ```
 
-Wait ~10 seconds, then verify:
+Wait ~15 seconds, then verify:
 
 ```bash
 docker compose ps
@@ -188,9 +190,12 @@ docker compose ps
 **Expected:**
 
 ```
-NAME              STATUS
-mfa-postgres      Up (healthy)
-mfa-backend-api   Up
+NAME                STATUS
+mfa-postgres        Up (healthy)
+mfa-redis           Up (healthy)
+mfa-backend-api     Up (healthy)
+mfa-crawler-worker  Up
+mfa-ml-worker       Up
 ```
 
 Quick health check:
@@ -210,35 +215,15 @@ curl -s http://localhost:8000/health | uv run python -m json.tool
 
 (`env` may show `poc` if set in your `.env`.)
 
-### Step 6.2 — Start worker containers
-
-Workers are behind the `workers` profile. Start them **after** core services are healthy:
-
-```bash
-docker compose --profile workers up -d
-```
-
-This starts:
+**Important:** `ml-worker` requires `ml/artifacts/v1/model.pkl` and `calibrator.pkl`. If those files are missing, the container will crash-loop (see [§12 ml-worker crash](#ml-worker-keeps-restarting-file-not-found-artifactsmodelpkl)). Generate artifacts in [§7.8](#78-generate-ml-artifacts-before-ml-worker) before relying on scoring.
 
 | Container | Role |
 |-----------|------|
+| `postgres` | URLs, jobs, signals, classifications, audit |
+| `redis` | Cache layer (MVP) |
+| `backend-api` | FastAPI on `:8000` |
 | `crawler-worker` | Polls `crawl_jobs` → Playwright crawl → `signal_snapshots` → enqueues `score_jobs` |
 | `ml-worker` | Polls `score_jobs` → `classify_snapshot()` → `classifications` + audit |
-
-**Important:** `ml-worker` requires `ml/artifacts/v1/model.pkl` and `calibrator.pkl`. If those files are missing, the container will crash-loop (see [§12 ml-worker crash](#ml-worker-keeps-restarting-file-not-found-artifactsmodelpkl)). Generate artifacts in [§7.8](#78-generate-ml-artifacts-before-ml-worker) before relying on scoring.
-
-```bash
-docker compose ps
-```
-
-**Expected (all four running):**
-
-```
-mfa-postgres        Up (healthy)
-mfa-backend-api     Up
-mfa-crawler-worker  Up
-mfa-ml-worker       Up
-```
 
 Follow logs:
 
@@ -246,11 +231,94 @@ Follow logs:
 docker compose logs -f backend-api crawler-worker ml-worker
 ```
 
+### Step 6.2 — Start or stop individual services
+
+`depends_on` pulls in prerequisites automatically. Examples:
+
+| Goal | Command |
+|------|---------|
+| Core only (API + DB + cache) | `docker compose up -d postgres redis backend-api` |
+| Crawler only | `docker compose up -d crawler-worker` |
+| ML worker only | `docker compose up -d ml-worker` |
+| Stop crawler | `docker compose down crawler-worker` |
+| Stop API (workers keep running) | `docker compose down backend-api` |
+
+### Step 6.3 — Multiple crawler workers (batch eval)
+
+Each `crawler-worker` processes **one URL at a time** (dual-persona Playwright is CPU/RAM heavy). For gold-label batch runs, scale horizontally — workers coordinate via Postgres `FOR UPDATE SKIP LOCKED` (no duplicate claims).
+
+**Requirements:** `crawler-worker` must **not** use a fixed `container_name` in `docker-compose.yml` (already configured).
+
+```bash
+# Option A — env + scale flag (set in root .env)
+CRAWL_WORKER_REPLICAS=3 docker compose up -d --scale crawler-worker=3
+
+# Option B — helper script (reads CRAWL_WORKER_REPLICAS from .env, default 1)
+chmod +x scripts/dev/up-stack.sh
+./scripts/dev/up-stack.sh
+```
+
+Verify replicas:
+
+```bash
+docker compose ps crawler-worker
+# mfa-detection-platform-crawler-worker-1
+# mfa-detection-platform-crawler-worker-2
+# mfa-detection-platform-crawler-worker-3
+```
+
+Logs aggregate all replicas:
+
+```bash
+docker compose logs -f crawler-worker
+```
+
+**Sizing:** plan ~1–2 GB RAM per Chromium worker. On a laptop, `CRAWL_WORKER_REPLICAS=2` or `3` is typical; use `CRAWL_DUAL_PERSONA=false` and `CRAWL_DWELL_SEC=0` for faster batch eval (see batch pipeline script).
+
+**Note:** plain `docker compose up -d` starts **one** crawler unless you pass `--scale`. Set `CRAWL_WORKER_REPLICAS` in `.env` and use `./scripts/dev/up-stack.sh` for the default replica count.
+
+| Optional LocalStack (S3/SQS) | `docker compose --profile localstack up -d localstack` |
+
+Rebuild one service after code changes:
+
+```bash
+docker compose build backend-api
+docker compose up -d backend-api
+```
+
+### Step 6.4 — Reviewer console E2E (MVP-4)
+
+With the API stack running:
+
+```bash
+uv run python scripts/seed/seed_reviewer_demo.py   # demo HITL queue rows (idempotent)
+cd frontend && npm install && cp .env.local.example .env.local && npm run dev
+```
+
+Open http://localhost:5173 — dev login picks **role** + **actor** (stored in `localStorage`, sent as `X-MFA-Role` / `X-MFA-Actor`).
+
+Walk through:
+
+1. **Review Queue** — filter by tier/domain; click **Detail** on a row
+2. **Detail** — review explanation + top signals; click **Submit override** (reviewer/admin/ad_ops only)
+3. **Override** — classification ID pre-filled; submit with required reason code
+4. Verify audit: `curl -s http://localhost:8000/api/v1/reviews/queue -H "X-MFA-Role: reviewer" | jq`
+5. **Chat** — query a crawled domain; confirm citations render
+
+Or use Docker Compose with the `frontend` service on :5173 (`docker compose up -d --build`).
+
+Seed data refresh for retrain:
+
+```bash
+uv run python scripts/seed/build_live_subset.py --use-subset-100
+uv run python scripts/seed/build_live_subset.py  # excludes synthetic publisher paths
+```
+
 ### Step 6.3 — Stop / reset
 
 ```bash
-docker compose down           # keep database volume
-docker compose down -v        # wipe database (fresh start)
+docker compose down           # stop all services; keep database volume
+docker compose down -v        # wipe Postgres / LocalStack volumes (fresh start)
 ```
 
 ---
@@ -415,7 +483,7 @@ docker compose logs -f crawler-worker
 Look for structured events such as `signal_snapshot_persisted` and `crawl_job` completion. If status stays `queued`, ensure workers are up:
 
 ```bash
-docker compose --profile workers up -d crawler-worker
+docker compose up -d crawler-worker
 ```
 
 ---
@@ -591,7 +659,7 @@ ls ml/artifacts/v1/model.pkl ml/artifacts/v1/calibrator.pkl
 After artifacts exist:
 
 ```bash
-docker compose --profile workers up -d ml-worker
+docker compose up -d ml-worker
 docker compose logs -f ml-worker
 ```
 
@@ -664,7 +732,7 @@ Run from repo root with Docker installed. Assumes fresh stack.
 ```bash
 # 1. Start everything
 docker compose up -d
-docker compose --profile workers up -d
+docker compose up -d
 
 # 2. Health
 curl -s http://localhost:8000/health/db | uv run python -m json.tool
@@ -687,7 +755,7 @@ pickle.dump(cal, open(o/'calibrator.pkl','wb'))
 "
 
 # 4. Restart ml-worker so it picks up artifacts
-docker compose --profile workers up -d ml-worker
+docker compose up -d ml-worker
 
 # 5. Ingest + capture IDs
 RESP=$(curl -s -X POST http://localhost:8000/api/v1/urls \
@@ -740,6 +808,25 @@ Done: 1 batch(es), accepted=5, duplicate=0, invalid=0
 
 Requires API running (`docker compose up -d`).
 
+### 7A.1b Batch pipeline eval (POC-5.3 / POC-5.4)
+
+Workers must be running (`docker compose up -d`).
+
+```bash
+# Ingest + wait for crawl/score + write batch_eval_report.json + metrics.json
+uv run --package mfa-ml python scripts/eval/batch_pipeline_report.py \
+  --ingest --wait --source-batch-id poc-5-batch-eval
+
+# Report on current DB state only
+uv run --package mfa-ml python scripts/eval/batch_pipeline_report.py --report-only
+
+# Export HITL reviewer CSV (MFA_Medium + Uncertain by default)
+uv run --package mfa-backend python scripts/export/reviewer_csv.py \
+  --output ml/artifacts/v1/reviewer_queue.csv
+```
+
+Outputs: `ml/artifacts/v1/batch_eval_report.json`, `metrics.json`, `eval_notes.md`
+
 ---
 
 ### 7A.2 Smoke crawl — single URL (native, no DB)
@@ -772,8 +859,8 @@ Null fields are features not yet extracted — see `docs/SIGNALS.md`.
 ### 7A.3 Smoke crawl — Docker
 
 ```bash
-docker compose --profile workers build crawler-worker
-docker compose --profile workers run --rm crawler-worker \
+docker compose build crawler-worker
+docker compose run --rm crawler-worker \
   python -m mfa_crawler.smoke https://example.com/
 ```
 
@@ -1072,7 +1159,7 @@ Native dev: `export ARTIFACT_DIR=ml/artifacts/v1` before `python -m mfa_ml.worke
 `crawler-worker` is not running or cannot reach Postgres.
 
 ```bash
-docker compose --profile workers up -d crawler-worker
+docker compose up -d crawler-worker
 docker compose logs crawler-worker
 ```
 
@@ -1085,7 +1172,7 @@ The URL path does not exist. Use a live URL (e.g. `https://example.com/`) or pic
 ML binaries are missing. Generate them per [§7.8](#78-generate-ml-artifacts-before-ml-worker), then restart:
 
 ```bash
-docker compose --profile workers up -d ml-worker
+docker compose up -d ml-worker
 ```
 
 ### `classification_not_found` on GET /classifications
@@ -1130,7 +1217,7 @@ brew install libomp
 ```bash
 uv run --package mfa-crawler playwright install chromium
 # Or inside Docker:
-docker compose --profile workers build --no-cache crawler-worker
+docker compose build --no-cache crawler-worker
 ```
 
 ### `uv sync` errors
@@ -1185,9 +1272,10 @@ git pull origin develop
 | POC-4.3 (ml-worker score consumer) | Workers | **Done** | `mfa_ml/consumer.py` → `classifications` rows |
 | POC-4.4 (audit writer) | Backend | **Done** | `url.ingested`, `crawl.completed`, `classification.scored` |
 | POC-4.5 (classifications API) | API | **Done** | `GET /classifications/{url_id}` + `/history` |
-| POC-5.2 (list jobs endpoint) | API | **Done** | `GET /api/v1/jobs` with `status` / `domain` filters |
-| POC-5.6 (E2E walkthrough) | Docs | **Done** | This guide §7 + §7.11 |
-| POC-5 (batch eval, HITL export) | All | **In progress** | Full gold-label batch crawl, reviewer CSV, OpenAPI examples |
+| POC-5.3 (batch pipeline) | QA | **Done** | `scripts/eval/batch_pipeline_report.py` → `batch_eval_report.json` (46% crawl success) |
+| POC-5.4 (live metrics) | ML | **Done** | `metrics.json` + `eval_notes.md` (18.9% precision / 55.2% recall) |
+| POC-5.5 (reviewer CSV) | Data | **Done** | `scripts/export/reviewer_csv.py` |
+| **Baseline exit** | All | **Done** | MVP unlocked — Ad Ops sign-off pending |
 | MVP (dual-persona, LLM, RAG, review UI) | All | **Not started** | Frontend at MVP-4.1; see `docs/ROADMAP.md` |
 
 **E2E path (live):** `POST /urls` → `crawl_jobs` → crawler-worker → `signal_snapshots` → `score_jobs` → ml-worker → `classifications` + `audit_events` → `GET /classifications/{url_id}`

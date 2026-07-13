@@ -73,6 +73,17 @@ class TestR4CleanPublisher:
         assert engine.evaluate({"ad_to_content_ratio": 0.03, "content_word_count": 200}) is None
 
 
+class TestR5AggressiveRefresh:
+    def test_fires_on_high_refresh(self, engine: RulesEngine) -> None:
+        match = engine.evaluate({"refresh_events_60s": 4, "avg_refresh_interval_sec": 12.0})
+        assert match is not None
+        assert match.rule_id == "R5"
+        assert match.tier == "MFA_Medium"
+
+    def test_no_fire_when_null(self, engine: RulesEngine) -> None:
+        assert engine.evaluate({"refresh_events_60s": None}) is None
+
+
 class TestRulePriority:
     def test_r1_before_r2(self, engine: RulesEngine) -> None:
         """R1 fires when both R1 and R2 conditions are satisfied."""

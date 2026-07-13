@@ -15,13 +15,14 @@ from mfa_ml.scoring.output import Confidence, Tier
 class TierThresholds:
     """Score/confidence cut-offs for tier assignment.
 
-    All thresholds are inclusive lower bounds unless noted.
+    MVP-2.2 recalibration: raised high_score/high_confidence to reduce
+    MFA_High false positives observed in POC-5.4 batch eval.
     """
 
-    high_score: float = 0.75
-    high_confidence: float = 0.75
-    medium_score: float = 0.45
-    low_score: float = 0.20
+    high_score: float = 0.88
+    high_confidence: float = 0.82
+    medium_score: float = 0.50
+    low_score: float = 0.25
     uncertain_confidence: float = 0.55
 
     def validate(self) -> None:

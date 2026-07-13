@@ -94,6 +94,34 @@ async def test_persist_signal_snapshot_increments_version(session_factory, seed_
 
 
 @pytest.mark.asyncio
+async def test_persist_signal_snapshot_merges_enrichment(session_factory, seed_url) -> None:
+    url_id = await seed_url()
+    payload = _sample_payload()
+
+    async with session_factory() as session:
+        result = await persist_signal_snapshot(
+            session,
+            url_id=url_id,
+            payload=payload,
+            crawl_duration_sec=2.5,
+            persona="direct",
+            enrichment={"referral_direct_delta_score": 0.42},
+        )
+        await session.commit()
+
+    assert result.evidence_hash == compute_evidence_hash(
+        {**payload.to_db(), "referral_direct_delta_score": 0.42}
+    )
+
+    async with session_factory() as session:
+        row = await session.scalar(
+            select(SignalSnapshot).where(SignalSnapshot.id == result.snapshot_id)
+        )
+        assert row is not None
+        assert row.signals["referral_direct_delta_score"] == 0.42
+
+
+@pytest.mark.asyncio
 async def test_persist_signal_snapshot_unknown_url_raises(session_factory) -> None:
     payload = _sample_payload()
     async with session_factory() as session:

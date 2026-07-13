@@ -178,7 +178,7 @@ async def test_score_pipeline_end_to_end(client, artifacts) -> None:
     assert body["explanation"]
     assert body["evidence_hash"] == "f" * 64
     assert body["classifier"]
-    assert body["schema_version"] == "v1"
+    assert body["schema_version"] in {"v1", "v1.1"}
 
     async with session_factory() as session:
         audit = await session.scalar(

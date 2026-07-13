@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MFA Detection Platform — Lead Architect Submission</title>
+<style>
+/* ── Reset & base ─────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 16px; }
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  color: #1a1a2e;
+  background: #ffffff;
+  line-height: 1.65;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 2.5rem;
+}
+
+/* ── Typography ──────────────────────────────────────────────────────── */
+h1 { font-size: 2.4rem; color: #2563eb; font-weight: 800; letter-spacing: -0.5px; }
+h2 { font-size: 1.7rem; color: #1e3a5f; font-weight: 700; margin: 2.5rem 0 1rem;
+     padding-bottom: 0.4rem; border-bottom: 2px solid #2563eb; }
+h3 { font-size: 1.2rem; color: #1e3a5f; font-weight: 600; margin: 1.6rem 0 0.6rem; }
+h4 { font-size: 1rem; color: #2563eb; font-weight: 600; margin: 1rem 0 0.4rem; }
+p  { margin-bottom: 0.85rem; }
+ul, ol { padding-left: 1.5rem; margin-bottom: 0.85rem; }
+li { margin-bottom: 0.3rem; }
+strong { font-weight: 600; color: #1e3a5f; }
+
+/* ── Section dividers ────────────────────────────────────────────────── */
+.section-divider { border: none; border-top: 2px solid #2563eb; margin: 2rem 0; }
+
+/* ── Tables ──────────────────────────────────────────────────────────── */
+table { width: 100%; border-collapse: collapse; margin: 1rem 0 1.5rem; font-size: 0.88rem; }
+thead tr { background: #1e3a5f; color: #ffffff; }
+thead th { padding: 0.7rem 0.9rem; text-align: left; font-weight: 600; }
+tbody tr:nth-child(even) { background: #f8fafc; }
+tbody tr:nth-child(odd)  { background: #ffffff; }
+tbody td { padding: 0.6rem 0.9rem; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover { background: #eff6ff; }
+
+/* ── Code blocks ─────────────────────────────────────────────────────── */
+pre, code { font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; font-size: 0.82rem; }
+pre {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 1rem 1.2rem;
+  overflow-x: auto;
+  margin: 0.8rem 0 1.2rem;
+  line-height: 1.5;
+}
+code { background: #f1f5f9; padding: 0.1em 0.35em; border-radius: 3px; font-size: 0.85em; }
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* ── ADR cards ───────────────────────────────────────────────────────── */
+.adr-card {
+  border-left: 4px solid #2563eb;
+  background: #f0f7ff;
+  border-radius: 0 6px 6px 0;
+  padding: 1rem 1.3rem;
+  margin: 1.2rem 0;
+}
+.adr-card h4 { color: #1e3a5f; margin-top: 0; font-size: 1.0rem; }
+.adr-card .adr-meta { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; margin-top: 0.7rem; font-size: 0.875rem; }
+.adr-meta-item strong { display: block; color: #2563eb; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 0.15rem; }
+
+/* ── Warning / risk boxes ────────────────────────────────────────────── */
+.risk-box {
+  border-left: 4px solid #dc2626;
+  background: #fef2f2;
+  border-radius: 0 6px 6px 0;
+  padding: 0.9rem 1.2rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+/* ── Success / done boxes ────────────────────────────────────────────── */
+.done-box {
+  border-left: 4px solid #16a34a;
+  background: #f0fdf4;
+  border-radius: 0 6px 6px 0;
+  padding: 0.9rem 1.2rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+/* ── Info boxes ──────────────────────────────────────────────────────── */
+.info-box {
+  border-left: 4px solid #2563eb;
+  background: #eff6ff;
+  border-radius: 0 6px 6px 0;
+  padding: 0.9rem 1.2rem;
+  margin: 0.8rem 0;
+  font-size: 0.9rem;
+}
+
+/* ── ASCII flow diagram ──────────────────────────────────────────────── */
+.flow-diagram {
+  background: #0f172a;
+  color: #94e2cd;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.78rem;
+  padding: 1.2rem 1.4rem;
+  border-radius: 8px;
+  margin: 1rem 0 1.5rem;
+  overflow-x: auto;
+  line-height: 1.6;
+}
+
+/* ── Cover page ──────────────────────────────────────────────────────── */
+.cover {
+  min-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  border: 2px solid #2563eb;
+  border-radius: 12px;
+  padding: 3rem 3.5rem;
+  margin-bottom: 3rem;
+  background: linear-gradient(135deg, #f0f7ff 0%, #ffffff 60%, #e8f4fd 100%);
+}
+.cover h1 { font-size: 2.6rem; margin-bottom: 0.5rem; }
+.cover .subtitle { font-size: 1.15rem; color: #374151; margin: 0.8rem 0; font-style: italic; max-width: 700px; }
+.cover .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-top: 2rem; }
+.cover .meta-item { background: #ffffff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 0.9rem 1.2rem; }
+.cover .meta-item .label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; font-weight: 600; }
+.cover .meta-item .value { font-size: 1.05rem; font-weight: 700; color: #1e3a5f; margin-top: 0.2rem; }
+.cover .status-badge { display: inline-block; background: #dcfce7; color: #166534; border: 1px solid #86efac; border-radius: 20px; padding: 0.3rem 0.9rem; font-size: 0.82rem; font-weight: 600; margin-top: 1.5rem; }
+.cover .status-badge.mvp { background: #fef9c3; color: #854d0e; border-color: #fde047; }
+
+/* ── Section headings with anchors ──────────────────────────────────── */
+.section-number { color: #2563eb; font-weight: 800; }
+
+/* ── Two-column grid ─────────────────────────────────────────────────── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin: 0.8rem 0; }
+
+/* ── Pill badges ─────────────────────────────────────────────────────── */
+.badge { display: inline-block; border-radius: 12px; padding: 0.15rem 0.6rem; font-size: 0.78rem; font-weight: 600; margin: 0.1rem; }
+.badge-red    { background: #fee2e2; color: #991b1b; }
+.badge-yellow { background: #fef9c3; color: #854d0e; }
+.badge-green  { background: #dcfce7; color: #166534; }
+.badge-blue   { background: #dbeafe; color: #1d4ed8; }
+.badge-purple { background: #ede9fe; color: #5b21b6; }
+.badge-gray   { background: #f1f5f9; color: #374151; }
+
+/* ── Print styles ────────────────────────────────────────────────────── */
+@media print {
+  body { padding: 1rem; font-size: 10pt; }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 14pt; page-break-before: always; }
+  h2:first-of-type { page-break-before: avoid; }
+  .cover { page-break-after: always; min-height: auto; }
+  .adr-card, .risk-box, .done-box, .info-box { break-inside: avoid; }
+  table { break-inside: auto; }
+  tr { break-inside: avoid; }
+  pre { break-inside: avoid; white-space: pre-wrap; }
+  @page { margin: 2cm; size: A4; }
+}
+
+/* ── Print header (visible only in print) ────────────────────────────── */
+.print-header {
+  display: none;
+}
+@media print {
+  .print-header {
+    display: block;
+    position: running(header);
+    font-size: 8pt;
+    color: #6b7280;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 0.3rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+/* ── Table of contents ───────────────────────────────────────────────── */
+.toc { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.4rem 1.8rem; margin: 2rem 0; }
+.toc h3 { margin-top: 0; color: #2563eb; }
+.toc ol { columns: 2; column-gap: 2rem; }
+.toc li { margin-bottom: 0.25rem; }
+.toc a { color: #2563eb; text-decoration: none; font-size: 0.9rem; }
+.toc a:hover { text-decoration: underline; }
+
+/* ── Mermaid diagram wrapper ─────────────────────────────────────────── */
+.mermaid-wrap {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 1.5rem 1rem;
+  margin: 1rem 0 1.5rem;
+  overflow-x: auto;
+  text-align: center;
+}
+.mermaid-wrap .mermaid { display: inline-block; text-align: left; }
+.mermaid-wrap svg { max-width: 100%; height: auto; }
+
+/* Hide raw mermaid source — show only after rendering */
+.mermaid-source { display: none !important; }
+
+.diagram-caption {
+  font-size: 0.8rem;
+  color: #6b7280;
+  text-align: center;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+/* Gap badge for dashed boxes in diagrams */
+.gap-note {
+  display: inline-block;
+  background: #fef9c3;
+  border: 1px solid #fde047;
+  color: #854d0e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+  margin-left: 0.3rem;
+}
+/* Legend box */
+.diagram-legend {
+  display: flex;
+  gap: 1.5rem;
+  font-size: 0.8rem;
+  color: #374151;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+.legend-item { display: flex; align-items: center; gap: 0.4rem; }
+.legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+.legend-built   { background: #22c55e; }
+.legend-sim     { background: #f59e0b; }
+.legend-gap     { background: #9ca3af; border: 2px dashed #6b7280; }
+
+/* ── Print-to-PDF: ensure SVGs render fully ──────────────────────────── */
+@media print {
+  /* Diagrams must be visible and not cut off */
+  .mermaid-wrap {
+    overflow: visible !important;
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .mermaid-wrap svg {
+    display: block !important;
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  /* Never show raw source text in print */
+  .mermaid-source { display: none !important; }
+  /* Print button invisible */
+  #print-btn { display: none !important; }
+}
+
+/* ── Print button ────────────────────────────────────────────────────── */
+#print-btn {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.65rem 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(37,99,235,0.35);
+  z-index: 1000;
+}
+#print-btn:hover { background: #1d4ed8; }
+
+/* Render status overlay */
+#render-status {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #1e3a5f;
+  color: #fff;
+  text-align: center;
+  padding: 0.6rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  z-index: 2000;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<script>
+(function() {
+  // Configure Mermaid — do NOT use startOnLoad; we drive rendering manually
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    themeVariables: {
+      primaryColor: '#dbeafe',
+      primaryTextColor: '#1e3a5f',
+      primaryBorderColor: '#2563eb',
+      lineColor: '#475569',
+      secondaryColor: '#f0fdf4',
+      tertiaryColor: '#fefce8',
+      edgeLabelBackground: '#ffffff',
+      clusterBkg: '#f1f5f9',
+      clusterBorder: '#cbd5e1',
+      fontSize: '13px'
+    },
+    flowchart: { curve: 'basis', padding: 16 },
+    securityLevel: 'loose'
+  });
+
+  // Counter for unique IDs
+  let _id = 0;
+  function nextId() { return 'mermaid-svg-' + (++_id); }
+
+  // Render a single .mermaid element to inline SVG
+  async function renderOne(el) {
+    const source = el.textContent.trim();
+    if (!source) return;
+    const id = nextId();
+    try {
+      const { svg } = await mermaid.render(id, source);
+      const wrapper = document.createElement('div');
+      wrapper.innerHTML = svg;
+      const svgEl = wrapper.firstElementChild;
+      if (svgEl) {
+        svgEl.style.maxWidth = '100%';
+        svgEl.style.height = 'auto';
+        svgEl.removeAttribute('height'); // let it scale naturally
+      }
+      // Replace raw source div with rendered SVG
+      el.parentNode.replaceChild(wrapper, el);
+    } catch (err) {
+      console.error('Mermaid render error:', err);
+      el.style.color = '#dc2626';
+      el.style.fontFamily = 'monospace';
+      el.style.whiteSpace = 'pre';
+      el.style.display = 'block';
+    }
+  }
+
+  // Render all diagrams on DOMContentLoaded
+  async function renderAll() {
+    const status = document.getElementById('render-status');
+    if (status) status.style.display = 'block';
+
+    const diagrams = document.querySelectorAll('.mermaid');
+    for (const el of diagrams) {
+      await renderOne(el);
+    }
+
+    if (status) status.style.display = 'none';
+    // Mark body as rendered so print CSS can rely on it
+    document.body.setAttribute('data-diagrams-rendered', 'true');
+  }
+
+  document.addEventListener('DOMContentLoaded', renderAll);
+
+  // Print button: wait for rendering, then open print dialog
+  window.safePrint = function() {
+    const status = document.getElementById('render-status');
+    if (document.body.getAttribute('data-diagrams-rendered') === 'true') {
+      window.print();
+    } else {
+      if (status) { status.textContent = 'Rendering diagrams… please wait'; status.style.display = 'block'; }
+      // Poll until rendered
+      const poll = setInterval(function() {
+        if (document.body.getAttribute('data-diagrams-rendered') === 'true') {
+          clearInterval(poll);
+          if (status) status.style.display = 'none';
+          setTimeout(window.print, 300);
+        }
+      }, 200);
+    }
+  };
+})();
+</script>
+</head>
+<body>
+<div id="render-status">⏳ Rendering diagrams for PDF export… please wait</div>
+<button id="print-btn" onclick="safePrint()">🖨️ Save as PDF</button>
+<div class="print-header">MFA Detection Platform — Lead Architect Submission | July 2026</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     COVER PAGE
+═══════════════════════════════════════════════════════════════════════ -->
+<div class="cover">
+  <div>
+    <div style="color:#2563eb;font-size:0.82rem;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin-bottom:0.8rem;">Lead / Architect Assessment — As-Built Revision</div>
+    <h1>MFA Detection Platform</h1>
+    <p class="subtitle">AI-Enabled Made-For-Advertising Classification, Explanation &amp; RAG Bot — Architecture &amp; Implementation Report</p>
+    <div style="width:60px;height:4px;background:#2563eb;border-radius:2px;margin:1.2rem 0;"></div>
+    <p style="color:#6b7280;font-size:0.92rem;max-width:650px;">
+      As-built architecture, API contracts, Mermaid data-flow diagrams, and MVP-to-production roadmap
+      for the running codebase that classifies MFA websites, explains its reasoning with cited signals,
+      routes uncertain cases to human reviewers, and answers ad-ops questions via a grounded RAG bot.
+    </p>
+    <div class="meta-grid">
+      <div class="meta-item">
+        <div class="label">Role</div>
+        <div class="value">Lead / Solution Architect</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Submission Date</div>
+        <div class="value">July 2026</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Stack</div>
+        <div class="value">Python 3.12 · FastAPI · XGBoost · Playwright · OpenSearch · Redis · AWS Bedrock</div>
+      </div>
+      <div class="meta-item">
+        <div class="label">Current Phase</div>
+        <div class="value">Baseline/POC Complete → MVP In Progress</div>
+      </div>
+    </div>
+    <div style="margin-top:1.5rem;">
+      <span class="status-badge">✅ POC Complete — 2026-07-10</span>
+      <span class="status-badge mvp" style="margin-left:0.5rem;">🟡 MVP In Progress</span>
+      <span style="display:inline-block;background:#ede9fe;color:#5b21b6;border:1px solid #c4b5fd;border-radius:20px;padding:0.3rem 0.9rem;font-size:0.82rem;font-weight:600;margin-left:0.5rem;">615 Gold-Labelled URLs</span>
+    </div>
+    <div style="margin-top:1rem;padding:0.8rem 1rem;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;font-size:0.82rem;color:#374151;">
+      <strong>Diagrams in this report use Mermaid.js</strong> — solid boxes = built and running today; dashed yellow = roadmap gap (see Section 6).
+    </div>
+  </div>
+</div>
+
+<!-- Table of Contents -->
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <ol>
+    <li><a href="#assumptions">Assumptions</a></li>
+    <li><a href="#s1">System Architecture</a></li>
+    <li><a href="#s2">Data Signals Research</a></li>
+    <li><a href="#s3">Architecture Decision Records</a></li>
+    <li><a href="#s4">RAG Bot Architecture</a></li>
+    <li><a href="#s5">Risk &amp; Guardrail Design</a></li>
+    <li><a href="#s6">MVP vs Production Roadmap</a></li>
+    <li><a href="#s7">Estimation</a></li>
+    <li><a href="#s8">Cloud Service Mapping &amp; Scale Plan</a></li>
+    <li><a href="#s9">Working Code — Architecture Walkthrough</a></li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     ASSUMPTIONS
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="assumptions">
+<h2>Assumptions</h2>
+<div class="info-box">
+  <ul>
+    <li><strong>Target users:</strong> Digital advertising operations teams — Ad Ops, Campaign Managers, and human Reviewers. Not intended as a self-service consumer product.</li>
+    <li><strong>Primary cloud:</strong> AWS. Azure and GCP equivalents are fully documented in Section 8.</li>
+    <li><strong>Implementation status:</strong> Baseline/POC is complete as of 2026-07-10. This submission covers MVP-to-Production architecture. The code demonstrated is production-oriented (FastAPI + XGBoost + RAG service), not a throwaway prototype.</li>
+    <li><strong>LLM provider:</strong> AWS Bedrock (Claude Sonnet for RAG, Claude Haiku for explanations) in MVP. GPT-4o via Azure OpenAI private link is documented as an alternative.</li>
+    <li><strong>Crawl compliance:</strong> Targets are third-party ad inventory URLs. Legal review and robots.txt compliance are handled per jurisdiction; the platform respects configurable rate limits and user-agent identification.</li>
+    <li><strong>Gold-label dataset:</strong> 615 URLs from internal Ad Ops review. Vendor blocklists (Jounce, IAS) are used only for bootstrap labelling, never as sole ground truth.</li>
+    <li><strong>Traffic enrichment:</strong> Features such as <code>paid_traffic_pct</code> require a Similarweb-style third-party API. These are treated as one signal tier, not source of truth (ADR-008).</li>
+    <li><strong>Baseline targets:</strong> Precision ≥ 85%, Recall ≥ 70% on the gold-label set. The MVP feature expansion (16 → 60 features) is designed to close any remaining metrics gap.</li>
+  </ul>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 1: SYSTEM ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s1">
+<h2><span class="section-number">1.</span> System Architecture</h2>
+
+<p>The MFA Detection Platform is designed around a single core principle: <strong>no single signal is sufficient to identify a Made-For-Advertising site</strong>. MFA operators invest heavily in surface-level evasion — clean homepages, valid IVT profiles, even acceptable viewability scores. The platform's defensive architecture therefore scores at <strong>URL/page-section granularity</strong> using a multi-layer evidence accumulation strategy that combines crawl observations, domain metadata, supply chain signals, and campaign performance anomalies.</p>
+
+<p>The pipeline is structured as an 8-layer system, each layer producing versioned, auditable artifacts. The ingestion layer normalises and deduplicates incoming URLs, assigning a deterministic <code>url_id</code> via UUID5 before enqueuing them for asynchronous processing. The signal extraction layer employs a dual-persona Playwright crawler that simulates both direct navigation and content-recommendation referral (Outbrain/Taboola-style), capturing the referral-versus-direct behavioural delta that is one of the strongest MFA indicators per IAB/IAS guidance. A 60-second dwell period captures ad refresh behaviour that only manifests over time.</p>
+
+<p>The AI/ML layer is deliberately hybrid: a deterministic rules engine fires first on known high-precision patterns, short-circuiting the ML model when confidence is already high. When the rules engine passes, an XGBoost ensemble trained on the gold-label dataset produces a calibrated probability that feeds into a 5-tier output: <code>MFA_High</code>, <code>MFA_Medium</code>, <code>MFA_Low</code>, <code>Non_MFA</code>, and <code>Uncertain</code>. The LLM is intentionally <em>not</em> in the classification path (ADR-001); it is used only for human-readable explanation generation and for the RAG bot. This preserves auditability, keeps inference costs predictable, and makes the classifier's decisions fully reproducible.</p>
+
+<p>Every decision in the pipeline is bound to its evidence via a <code>SHA-256</code> hash of the canonical signal snapshot JSON (<code>evidence_hash</code>). This hash travels through classification, explanation, RAG responses, and audit events, forming an immutable chain of custody that supports compliance requirements. The HITL review queue routes medium-confidence and high-spend-uncertain cases to human reviewers whose overrides are stored <em>alongside</em> (never replacing) the ML score, preserving the ML signal for model retraining.</p>
+
+<h3>1.1 Architecture Layers</h3>
+<table>
+  <thead><tr><th>Layer</th><th>Components</th><th>Key Output</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Ingestion</strong></td><td>REST API (FastAPI), Batch Orchestrator (Step Functions), Event Processor, URL Dedup/Normaliser</td><td>url_id, crawl job, priority queue entry</td></tr>
+    <tr><td><strong>Signal Extraction</strong></td><td>Playwright Crawler (dual-persona: direct + referral simulation), DOM Ad Density Parser, Page Screenshot (Vision), Domain Metadata Enricher, Traffic Source Analyser</td><td>Feature vector (16→60 features) + evidence artifacts (HTML, screenshots, parquet)</td></tr>
+    <tr><td><strong>Data Stores</strong></td><td>Postgres JSONB (signals + jobs), S3 (HTML/screenshots/parquet), OpenSearch Serverless (vectors), ElastiCache Redis (cache), DynamoDB + S3 Object Lock (audit)</td><td>Versioned signal snapshots, classification history</td></tr>
+    <tr><td><strong>AI / ML</strong></td><td>Rules Engine → XGBoost Ensemble → Confidence Calibrator → HITL Router</td><td>tier, mfa_score, confidence, top_signals (SHAP-ranked)</td></tr>
+    <tr><td><strong>Explanation</strong></td><td>Jinja2 Template (Baseline) → LLM Explanation Generator (MVP, Bedrock Claude Haiku)</td><td>Human-readable narrative with cited signals</td></tr>
+    <tr><td><strong>RAG Bot</strong></td><td>Chat Gateway → Input Sanitiser → Intent Classifier → Query Router → Hybrid Retriever → Citation Validator → Grounded LLM</td><td>Cited answers, confidence, recommended_action</td></tr>
+    <tr><td><strong>Review UI</strong></td><td>Reviewer Console (React+TypeScript), Ops Dashboard (QuickSight/Grafana), Bot Chat UI, Blocklist Export API</td><td>Override labels, blocklist segments, dashboard metrics</td></tr>
+    <tr><td><strong>Observability</strong></td><td>CloudWatch Metrics/Logs, X-Ray Traces, Alerting SLOs, Cost Attribution</td><td>SLO dashboards, feature drift alerts, cost breakdowns</td></tr>
+  </tbody>
+</table>
+
+<h3>1.2 End-to-End Data Flow</h3>
+
+<div class="diagram-legend">
+  <div class="legend-item"><div class="legend-dot legend-built"></div><span><strong>LIVE</strong> — built and running (POC-5 exit, 2026-07-10)</span></div>
+  <div class="legend-item"><div class="legend-dot legend-sim"></div><span><strong>LIVE SIMULATED</strong> — running today; real crawler is Gap G2 (MVP roadmap)</span></div>
+  <div class="legend-item"><div class="legend-dot legend-gap"></div><span><strong>GAP</strong> — roadmap item, not yet built (see Section 6)</span></div>
+</div>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+flowchart TD
+    subgraph SOURCES["URL Discovery Sources"]
+        direction LR
+        S1["📋 Batch Inventory Feed\n(CSV / S3 / XLSX)"]
+        S2["⚡ Real-time Bid Stream\n(Webhook endpoint)"]
+        S3["🖱️ Manual Submission\n(Submit URLs screen)"]
+    end
+
+    subgraph INGEST["① Ingestion Layer  ✅ LIVE"]
+        I1["ingestion-service\n(FastAPI / Spring Boot)\nURL Dedup · url_id · Priority"]
+    end
+
+    subgraph SIGEXT["② Signal Extraction  ⚠️ LIVE SIMULATED"]
+        SE1["signal-extraction-service\nSHA-256 hash of URL\n→ 16 deterministic signals\n(no live crawl today)"]
+        SE2["🔧 GAP G2: crawler-service\nPlaywright · Headless Chrome\nDual-persona crawl\n60s dwell · refresh detection"]
+    end
+
+    subgraph STORES["③ Data Stores"]
+        DB1[("Postgres JSONB\nsignal_snapshots\nclassification_result")]
+        DB2[("Elasticsearch\nsignals-index\npolicy-docs\nhistorical-classifications\nreviewer-feedback")]
+        DB3[("Local Disk → S3\nHTML · Screenshots\nRaw artifacts")]
+        DB4[("Redis\nDomain tier cache\n24h TTL")]
+    end
+
+    subgraph AIML["④ AI / ML Layer  ✅ LIVE"]
+        ML1["Rules Engine\n(high-precision deterministic)"]
+        ML2["XGBoost Ensemble\npredict_proba → raw score"]
+        ML3["Confidence Calibrator\nIsotonic / Platt scaling"]
+        ML4["Tier Mapping\nMFA_High · MFA_Medium\nMFA_Low · Non_MFA · Uncertain"]
+        ML5["SHAP Top-5 Signal Attribution"]
+    end
+
+    subgraph EXPLAIN["⑤ Explanation Layer  ✅ LIVE"]
+        EX1["Jinja2 Templates\n(Baseline — live today)"]
+        EX2["LLM Explanation\nBedrock Claude Haiku\n(MVP — in progress)"]
+    end
+
+    subgraph REVIEW["⑥ Human Review  ✅ LIVE"]
+        R1["HITL Queue\nconf &lt; 0.85 → reviewer"]
+        R2["Review Console\nOverride · Reason Code\n1–5 Rating"]
+    end
+
+    subgraph AUDIT["⑦ Audit Log  ✅ LIVE (append-only)"]
+        A1["audit_log\nevent_id · entity_id · action\nevidence_hash · payload JSONB\n🔒 No UPDATE / DELETE"]
+    end
+
+    subgraph UI["⑧ User-Facing  ✅ LIVE"]
+        U1["Ops Dashboard\nMFA rate · Override rate\nExplanation quality"]
+        U2["Classification Explorer\nFilter · Search · CSV Export"]
+        U3["Blocklist Export API"]
+    end
+
+    SOURCES --> INGEST
+    INGEST -->|"Kafka: url.discovered"| SIGEXT
+    SE1 -->|"Kafka: signals.extracted"| DB1
+    SE1 --> DB3
+    SE2 -.->|"Gap G2: signals.raw.fetched"| SE1
+    DB1 --> DB2
+    DB1 --> AIML
+    ML1 -->|"rule match → short-circuit"| ML5
+    ML1 -->|"no match"| ML2
+    ML2 --> ML3
+    ML3 --> ML4
+    ML4 --> ML5
+    ML5 --> EXPLAIN
+    ML4 -->|"conf &lt; 0.85\nor high-spend"| REVIEW
+    EXPLAIN --> DB1
+    EXPLAIN --> DB4
+    EXPLAIN --> AUDIT
+    REVIEW -->|"Kafka: reviewer.feedback"| DB1
+    REVIEW --> AUDIT
+    DB1 --> UI
+    DB2 --> UI
+    AUDIT --> UI
+
+    style SE2 fill:#fefce8,stroke:#f59e0b,stroke-width:2px,stroke-dasharray:6 4
+    style EX2 fill:#fefce8,stroke:#f59e0b,stroke-width:2px,stroke-dasharray:6 4
+    style AUDIT fill:#f0fdf4,stroke:#16a34a
+    style REVIEW fill:#eff6ff,stroke:#2563eb
+</div>
+</div>
+<p class="diagram-caption">Figure 1.2 — End-to-end data flow (solid = built and verified; dashed yellow = roadmap gap). Kafka topics wire all async paths; Postgres + Elasticsearch are the primary stores.</p>
+
+<h3>1.3 Classification Pipeline — Cascade Detail</h3>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+flowchart LR
+    SF(["SignalFeatures v1.1\n16 crawl features"])
+
+    subgraph RULES["Rules Engine  ✅ LIVE"]
+        RE["Deterministic rules\nHigh-precision patterns\ne.g. ad_ratio &gt; 0.65\nAND word_count &lt; 250"]
+    end
+
+    subgraph XGB["XGBoost Ensemble  ✅ LIVE"]
+        XG["predict_proba(features)\nRaw probability 0–1\nTrain/val split by domain\n(no leakage)"]
+    end
+
+    subgraph CAL["Confidence Calibrator  ✅ LIVE"]
+        CL["Isotonic Regression\n/ Platt Scaling\nCalibrated probability"]
+    end
+
+    subgraph TIER["Tier Mapping  ✅ LIVE"]
+        TM["≥0.80 → MFA_High / high\n0.60–0.79 → MFA_Medium / medium\n0.40–0.59 → MFA_Low / medium\n&lt;0.40 → Non_MFA / high\nlow conf → Uncertain / low"]
+    end
+
+    subgraph SHAP["SHAP Attribution  ✅ LIVE"]
+        SH["Top-5 signal contributions\nfeature · value · contribution\nrank by abs(SHAP value)"]
+    end
+
+    subgraph EXP["Explanation  ✅ LIVE"]
+        EJ["Jinja2 templates\n(Baseline — running today)"]
+        EL["LLM Bedrock Claude Haiku\n(MVP — in progress)"]
+    end
+
+    subgraph HITL["HITL Router  ✅ LIVE"]
+        HR["conf &lt; 0.85\nor MFA_Medium / Uncertain\nor high-spend URL\n→ Reviewer Queue"]
+    end
+
+    OUT(["ClassificationOutput\ntier · mfa_score · confidence\ntop_signals · explanation\nevidence_hash · classifier"])
+
+    SF --> RULES
+    RULES -->|"rule fires\nclassifier=rules"| SHAP
+    RULES -->|"no match"| XGB
+    XGB --> CAL
+    CAL --> TIER
+    TIER --> SHAP
+    SHAP --> EXP
+    TIER --> HITL
+    EXP --> OUT
+    HITL --> OUT
+
+    style EL fill:#fefce8,stroke:#f59e0b,stroke-width:2px,stroke-dasharray:6 4
+    style OUT fill:#f0fdf4,stroke:#16a34a,font-weight:bold
+</div>
+</div>
+<p class="diagram-caption">Figure 1.3 — Classification cascade. Rules engine short-circuits ~20–30% of MFA_High cases at near-zero cost. LLM is never in the classification path (ADR-001).</p>
+
+<p>The classification pipeline follows a strict cascade pattern designed to maximise precision while keeping computational cost proportional to uncertainty:</p>
+<ol>
+  <li><strong>Rules Engine</strong> — Deterministic evaluation against high-precision rules (e.g., <code>ad_to_content_ratio &gt; 0.65 AND content_word_count &lt; 250</code>). When a rule fires, the pipeline short-circuits with <code>classifier="rules"</code> and <code>confidence="high"</code>. No XGBoost inference required, no calibration step. This path handles ~20–30% of MFA_High cases at near-zero compute cost.</li>
+  <li><strong>XGBoost Ensemble</strong> — When no rule fires, the full 16-feature vector is passed to the trained XGBoost classifier. <code>predict_proba()</code> returns a raw probability in [0,1]. The model is trained on domain-split data (train/val split by domain, not URL, to prevent leakage). SHAP values are computed for the top-5 contributing features.</li>
+  <li><strong>Confidence Calibrator</strong> — Raw XGBoost probabilities are systematically overconfident. An Isotonic regression (or Platt scaling) calibrator trained on the validation set maps raw probabilities to calibrated ones. This is critical for the <code>Uncertain</code> tier detection.</li>
+  <li><strong>Tier Mapping</strong> — Calibrated probability maps to tier+confidence: ≥0.80 → MFA_High/high; 0.60–0.79 → MFA_Medium/medium; 0.40–0.59 → MFA_Low/medium; &lt;0.40 → Non_MFA/high. Low confidence score (regardless of tier) → Uncertain/low.</li>
+  <li><strong>HITL Router</strong> — MFA_Medium, Uncertain, and any URL with historical_spend_usd above a configurable threshold are routed to the reviewer queue. The tier and score are stored immediately; HITL does not block the API response.</li>
+  <li><strong>Explanation Generator</strong> — Jinja2 templates (Baseline) render a narrative citing the top SHAP signals. In MVP, Bedrock Claude Haiku generates a more fluent explanation using the same signal evidence as context (no open-web access).</li>
+</ol>
+
+<h3>1.4 Near-Real-Time vs Batch Processing</h3>
+<table>
+  <thead><tr><th>Mode</th><th>Path</th><th>SLA</th><th>Queue</th><th>Use Case</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Batch</strong></td><td>Nightly inventory sweep, full crawl + full feature extraction, Step Functions orchestration</td><td>Hours</td><td>SQS Standard</td><td>Daily inventory hygiene, model training data</td></tr>
+    <tr><td><strong>Near-real-time</strong></td><td>New placements, shortened crawl + domain cache reuse</td><td>&lt;2–5 min</td><td>SQS FIFO priority</td><td>New domain onboarding, spend-weighted escalation</td></tr>
+    <tr><td><strong>Pre-bid (Production)</strong></td><td>Redis domain risk cache lookup only (no crawl)</td><td>&lt;200ms</td><td>Redis only</td><td>DSP/SSP pre-bid integration, sub-200ms latency requirement</td></tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 2: DATA SIGNALS RESEARCH
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s2">
+<h2><span class="section-number">2.</span> Data Signals Research</h2>
+
+<h3>2.1 Signal Tier Framework</h3>
+<table>
+  <thead><tr><th>Signal Category</th><th>Key Features</th><th>Why It Matters</th><th>Source</th><th>Gaming Risk</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Tier 1 — Ad Density &amp; Clutter</strong></td>
+      <td><code>ad_to_content_ratio</code>, <code>ads_above_fold</code>, <code>ad_slots_count</code>, <code>sticky_ad_count</code></td>
+      <td>ANA/IAB core MFA criterion; directly measures arbitrage intent. Sites optimised for impressions maximise ad surface area at the expense of content.</td>
+      <td>Headless crawl + DOM analysis</td>
+      <td>Low — hard to fake across all article path variations</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 1 — Ad Refresh Behaviour</strong></td>
+      <td><code>refresh_events_60s</code>, <code>avg_refresh_interval_sec</code></td>
+      <td>MFA monetises via impression recycling during session dwell. Refresh count during a 60-second crawl dwell is a strong indicator.</td>
+      <td>60s dwell crawl + OpenRTB Refresh object</td>
+      <td>Medium — can suppress for known crawler user-agents</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 1 — Traffic Source Skew</strong></td>
+      <td><code>paid_traffic_pct</code>, <code>social_traffic_pct</code>, <code>organic_traffic_pct</code></td>
+      <td>Legitimate publishers diversify across channels. MFA depends on bought traffic (Taboola/Outbrain) — typically 60–80%+ paid/social.</td>
+      <td>Verification vendor feed, Similarweb-style enrichment</td>
+      <td>Medium — enrichment data can lag by weeks</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 1 — Referral vs Direct Delta</strong></td>
+      <td><code>referral_direct_delta_score</code></td>
+      <td>Classic MFA evasion: homepage is clean for direct visitors; article pages show aggressive ad layouts for referral traffic. Only detectable via dual-persona crawl.</td>
+      <td>Dual-persona Playwright crawl (direct + referral simulation)</td>
+      <td>Low — requires knowledge of crawler referrer simulation</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 1 — Content Quality</strong></td>
+      <td><code>content_word_count</code>, <code>content_uniqueness_score</code>, <code>author_page_exists</code>, <code>llm_content_quality_score</code></td>
+      <td>Thin, duplicate, or AI-generated content with clickbait headlines is a strong editorial legitimacy proxy. MFA sites minimise content investment.</td>
+      <td>NLP embeddings, simhash dedup, LLM-assisted rubric</td>
+      <td>Medium — AI-generated content is increasingly indistinguishable</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 2 — Domain Metadata</strong></td>
+      <td><code>domain_age_days</code>, WHOIS privacy, registrar churn</td>
+      <td>Throwaway MFA operations use recently registered domains. Low domain age + high impression volume is suspicious.</td>
+      <td>WHOIS, DNS history, Similarweb</td>
+      <td>Low — domain age is hard to fake retroactively</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 2 — Supply Chain</strong></td>
+      <td><code>sellers_json_risk_tier</code>, ads.txt reseller chain</td>
+      <td>MFA sites often appear as resellers in supply chain rather than direct sellers. Sellers.json MFA index (Jounce) provides additional signal.</td>
+      <td>SSP sellers.json, ads.txt parser</td>
+      <td>Low — supply chain data is third-party verified</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 2 — Campaign Performance</strong></td>
+      <td><code>campaign_ctr_vs_benchmark</code>, <code>historical_spend_usd</code></td>
+      <td>MFA looks good on legacy viewability KPIs but shows anomalous CTR/attention vs peer-set benchmarks. Spend weighting prioritises high-stakes reviews.</td>
+      <td>Campaign performance warehouse, DSP exports</td>
+      <td>Medium — requires access to campaign-level data</td>
+    </tr>
+    <tr>
+      <td><strong>Tier 3 — Reviewer Overrides</strong></td>
+      <td>Historical overrides, reason codes, reviewer notes</td>
+      <td>Gold labels for retraining. Override patterns reveal systematic misclassifications and emerging MFA techniques.</td>
+      <td>Review console, Postgres</td>
+      <td>Low — internal data, controlled via RBAC</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>2.2 Current v1.1 Feature Schema (16 Crawl Features)</h3>
+<table>
+  <thead><tr><th>Feature</th><th>Type</th><th>Range</th><th>Null When</th><th>MFA Direction</th></tr></thead>
+  <tbody>
+    <tr><td><code>ad_to_content_ratio</code></td><td>float</td><td>0–1</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>ads_above_fold</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>ad_slots_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>sticky_ad_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>content_word_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↓ Low = MFA</td></tr>
+    <tr><td><code>refresh_events_60s</code></td><td>int</td><td>≥0</td><td>Dwell not run (null ≠ 0)</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>avg_refresh_interval_sec</code></td><td>float</td><td>≥0</td><td>No refresh events observed</td><td>↓ Short = MFA</td></tr>
+    <tr><td><code>content_uniqueness_score</code></td><td>float</td><td>0–1</td><td>Heuristic unavailable</td><td>↓ Low = MFA</td></tr>
+    <tr><td><code>author_page_exists</code></td><td>bool</td><td>true/false</td><td>Not detected</td><td>false = MFA indicator</td></tr>
+    <tr><td><code>slideshow_pagination_depth</code></td><td>int</td><td>≥0</td><td>Not a slideshow</td><td>↑ High = MFA (pagination farming)</td></tr>
+    <tr><td><code>video_autoplay_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>page_load_ad_latency_ms</code></td><td>float</td><td>≥0</td><td>Not measured</td><td>↓ Low = ads loaded early (MFA)</td></tr>
+    <tr><td><code>iframe_ad_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>native_ad_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↑ High = MFA</td></tr>
+    <tr><td><code>outbound_link_count</code></td><td>int</td><td>≥0</td><td>Not measured</td><td>↓ Low = isolated content = MFA</td></tr>
+    <tr><td><code>image_to_text_ratio</code></td><td>float</td><td>≥0</td><td>Not measured</td><td>↑ Very high = image padding = MFA</td></tr>
+  </tbody>
+</table>
+
+<h3>2.3 MVP Enrichment Features (Planned)</h3>
+<table>
+  <thead><tr><th>Feature</th><th>Type</th><th>Source</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><code>domain_age_days</code></td><td>int</td><td>WHOIS / DNS history</td><td>Low domain age + high impressions = suspect</td></tr>
+    <tr><td><code>paid_traffic_pct</code></td><td>float (0–100)</td><td>Similarweb-style API</td><td>MFA typically &gt;60% paid/social</td></tr>
+    <tr><td><code>social_traffic_pct</code></td><td>float (0–100)</td><td>Similarweb-style API</td><td>Combine with referral delta for signal lift</td></tr>
+    <tr><td><code>organic_traffic_pct</code></td><td>float (0–100)</td><td>Similarweb-style API</td><td>Low organic = weak editorial footprint</td></tr>
+    <tr><td><code>referral_direct_delta_score</code></td><td>float</td><td>Dual-persona crawl diff</td><td>Key evasion signal — only detectable via dual persona</td></tr>
+    <tr><td><code>sellers_json_risk_tier</code></td><td>str / ordinal</td><td>SSP sellers.json + Jounce MFA index</td><td>Reseller node risk tier</td></tr>
+    <tr><td><code>historical_spend_usd</code></td><td>float</td><td>Campaign performance warehouse</td><td>Used for HITL spend-weighted escalation</td></tr>
+    <tr><td><code>campaign_ctr_vs_benchmark</code></td><td>float</td><td>DSP exports</td><td>Anomalous CTR vs peer-set</td></tr>
+    <tr><td><code>simhash_dup_rate</code></td><td>float (0–1)</td><td>Simhash dedup pipeline</td><td>Content duplication across MFA network</td></tr>
+    <tr><td><code>llm_content_quality_score</code></td><td>float (0–1)</td><td>LLM rubric + NLP</td><td>AI-generated content quality assessment</td></tr>
+  </tbody>
+</table>
+
+<h3>2.4 Signals to Treat with Caution</h3>
+<div class="risk-box">
+  <strong>Anti-pattern 1: Viewability as a sole MFA indicator.</strong> MFA sites often score <em>high</em> viewability — they are specifically designed to have ads in-view. Using viewability alone produces systematic false negatives.
+</div>
+<div class="risk-box">
+  <strong>Anti-pattern 2: IVT/fraud flags as sole MFA indicator.</strong> MFA traffic is frequently human and valid. IVT detection identifies bot traffic, not arbitrage behaviour. These signals are orthogonal, not correlated.
+</div>
+<div class="risk-box">
+  <strong>Anti-pattern 3: Homepage-only crawling.</strong> MFA sites maintain clean homepages for direct navigation. The article pages under referral traffic are where the MFA behaviour is expressed. Always deep-link into article paths with referral simulation.
+</div>
+<div class="risk-box">
+  <strong>Anti-pattern 4: Single-domain blocking.</strong> MFA operations span subdomains, reseller nodes in sellers.json, and sibling domains under the same operator. Domain-only signals miss the full network footprint.
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 3: ARCHITECTURE DECISION RECORDS
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s3">
+<h2><span class="section-number">3.</span> Architecture Decision Records</h2>
+
+<div class="adr-card">
+  <h4>ADR-001 — Hybrid Rules + ML + LLM (not LLM-only classification)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>Deterministic rules catch known patterns; XGBoost/LightGBM ensemble for probabilistic ranking; LLM only for explanation generation and RAG answers — never as primary classifier.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>MFA classification needs precision at scale and full auditability. LLM-only classification is ~10–50× more expensive per URL, has latency of 2–5s vs &lt;100ms for rules+XGBoost, is harder to calibrate, and is non-deterministic — making audit trails ambiguous. Industry vendors (IAS, DV, Pixalate) all use multi-signal ML.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>LLM-only classification (too costly, non-deterministic); rule-only (insufficient precision for grey-area cases); random forest (replaced by XGBoost for better calibration support).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>More feature engineering and model maintenance overhead. However, the system achieves lower hallucination risk in classification, fully reproducible decisions, and cost-predictable scaling.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-002 — Page-Section Granularity with 5-Tier Output</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>Score per URL path pattern with tiered output: <code>MFA_High | MFA_Medium | MFA_Low | Non_MFA | Uncertain</code>. Action mapping: High → block; Medium/Uncertain → HITL; Low → monitor; Non_MFA → allow.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>ANA and DV guidance emphasises shades of gray in MFA classification. A binary domain-level flag either misses borderline cases (too lenient) or over-blocks legitimate publishers (too strict). Homepage is not representative of article experience.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Binary MFA/Non-MFA flag (insufficient for HITL routing); 3-tier (High/Low/Uncertain) — insufficient for spend-weighted escalation policy.</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>More complex action mapping; requires calibrated probabilities for tier boundary decisions. Enables proportional response and reduces false-positive blocking of grey-area publishers.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-003 — Dual-Persona Headless Crawling (Build, not Buy)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>Playwright cluster with (a) direct navigation and (b) simulated Outbrain/Taboola referrer; 60-second dwell window for ad refresh detection. Build the crawler core; augment with commercial verification APIs (IAS/Pixalate) for traffic signals not observable via crawl.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>Referral vs direct behavioural delta is one of the strongest MFA tell signals per IAB/IAS research. Commercial verification APIs do not expose per-URL dual-persona comparison. Playwright is mature, open-source, and supported in the existing stack.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Buy-only (IAS/Pixalate APIs) — misses the referral delta signal, vendor lock-in, higher per-URL cost at scale. Puppeteer — Playwright preferred for better browser context isolation.</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>Infrastructure cost for ECS Fargate crawler pool ($3K–$8K/mo at pilot scale). Legal/robots.txt compliance must be managed. Benefit: proprietary signal generation not available via buy-only path.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-004 — OpenSearch Serverless for Vector Store (AWS Primary)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>OpenSearch Serverless with hybrid BM25 + k-NN retrieval. Metadata filters on <code>domain</code>, <code>url_id</code>, <code>signal_version</code>, <code>doc_type</code> for scoped retrieval.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>Hybrid retrieval is required for the RAG use case: exact lookups ("show me signals for domain X") need BM25; semantic search ("sites similar to Y") needs k-NN. OpenSearch Serverless eliminates cluster management overhead. Native AWS integration with IAM and VPC.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Pinecone (fast POC, but vendor lock-in and no hybrid BM25); pgvector (simpler for MVP, but weaker at scale and no metadata filtering at query time); Azure AI Search (documented as Azure equivalent in Section 8); Vertex AI Vector Search (GCP equivalent).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>OpenSearch Serverless has cold-start latency for infrequent queries. Cost ($1.5K–$4K/mo at pilot) is higher than pgvector. Benefit: no index management, auto-scaling, production-grade hybrid search.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-005 — LLM Selection — Tiered by Use Case</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>
+      <table style="margin:0;font-size:0.82rem;">
+        <thead><tr><th>Use Case</th><th>Model</th></tr></thead>
+        <tbody>
+          <tr><td>Explanation generation</td><td>Claude Haiku / GPT-4o-mini</td></tr>
+          <tr><td>RAG answers</td><td>Claude Sonnet / GPT-4o</td></tr>
+          <tr><td>Content quality rubric</td><td>Small classifier + occasional LLM</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="adr-meta-item"><strong>Rationale</strong>Tiering LLM selection by task cost profile reduces per-URL explanation cost by ~4–8× vs using Sonnet for all calls. RAG answers benefit from stronger grounding adherence (Sonnet). Guardrail: LLM receives only retrieved JSON evidence — no open-web access in MVP.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Single model for all tasks (cost-inefficient); open-source Llama/Mistral on ECS (possible for Production, lower latency but higher infra complexity); GPT-4o via Azure OpenAI private link (documented as primary alternative).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>Two model endpoints to manage; occasional quality variance between Haiku and Sonnet. Mitigated by structured output schema and citation validation on all responses.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-006 — Event-Driven Microservices (SQS + ECS + Step Functions)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>API Gateway + ECS/Lambda for synchronous scoring API; SQS priority queues for async crawl dispatch; Step Functions for batch pipeline orchestration; EventBridge for scheduled triggers.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>Decouples crawl latency (seconds to minutes) from API response time (milliseconds). Enables independent auto-scaling of the crawl worker pool vs the scoring service. SQS FIFO enables spend-weighted priority without custom scheduler logic.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Celery + Redis as task queue (feasible for MVP, but operational overhead at scale); Kafka/Kinesis (overkill for MVP volumes; documented as OpenRTB stream ingestion path for Production); monolithic synchronous pipeline (blocks API, unscalable).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>Eventual consistency between submission and result availability. Managed via job status polling (<code>GET /api/v1/jobs/{job_id}</code>). Benefit: linear scaling, fault isolation between crawl and scoring layers.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-007 — Postgres + S3 as Feature Store (Feast Deferred)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>MVP: Postgres JSONB for online signal serving; S3 Parquet for offline training data lake. Feast or DynamoDB deferred until sub-100ms online lookup is required at bid time.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>At pilot scale (500K URLs/month), Postgres with proper indexing on <code>url_id</code> and Redis caching of recent results is sufficient for the API's throughput requirements. Feast adds operational complexity (feature server, registry) that is not justified until pre-bid latency targets demand it.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>DynamoDB for online serving (Production path when sub-100ms latency required at bid time); Feast with S3/Postgres backend (Production); pure Redis feature store (loses query flexibility).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>Postgres may bottleneck at 5M+ URLs/month without read replicas. Redis domain tier cache (24h TTL) mitigates hot-path pressure. Production upgrade path to DynamoDB is documented.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-008 — Integration Strategy (Inbound / Outbound / Buy)</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>Inbound: DSP CSV/S3 export, REST API, webhook for new domains, optional OpenRTB log sink (Kinesis). Outbound: Blocklist API segment push, pre-bid segment, BI facts (QuickSight/Looker), Slack alerts for high-spend MFA hits. Buy: Traffic enrichment (Similarweb-style) as one signal tier, not source of truth.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>Advertisers need blocklist segments that plug directly into their DSP. The BI facts table enables spend-at-risk reporting without requiring direct platform access. Treating bought enrichment data as one signal (not ground truth) prevents over-indexing on vendor-biased lists.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Direct OpenRTB stream integration (Production only — requires Kinesis sink and stream processing); MFA verdict webhooks pushed to DSP (Production — requires DSP partnership).</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>CSV/S3 batch ingestion has latency vs streaming; sufficient for MVP nightly inventory hygiene use case.</div>
+  </div>
+</div>
+
+<div class="adr-card">
+  <h4>ADR-009 — AWS as Primary Cloud</h4>
+  <div class="adr-meta">
+    <div class="adr-meta-item"><strong>Decision</strong>AWS as the primary cloud provider. Full Azure and GCP equivalents are documented in Section 8 for organisational flexibility.</div>
+    <div class="adr-meta-item"><strong>Rationale</strong>AWS has the most mature ad-tech log processing ecosystem (Kinesis/Glue), OpenSearch Serverless, Step Functions for batch orchestration, and Bedrock for LLM access without custom model deployment. Most of the target organisation's existing infrastructure is on AWS.</div>
+    <div class="adr-meta-item"><strong>Alternatives Considered</strong>Azure: strong alternative if Azure OpenAI private link is required for LLM; Container Apps for crawler workers. GCP: Vertex AI Vector Search + Cloud Run are viable. Multi-cloud is supported via cloud-agnostic data contracts.</div>
+    <div class="adr-meta-item"><strong>Trade-offs</strong>AWS vendor lock-in risk mitigated by using open standards (Postgres, S3-compatible storage, OpenAPI). Service-level abstractions mean switching to Azure/GCP requires infrastructure config changes, not code rewrites.</div>
+  </div>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 4: RAG BOT ARCHITECTURE
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s4">
+<h2><span class="section-number">4.</span> RAG Bot Architecture</h2>
+
+<p>The RAG bot provides Ad Ops teams with a natural-language interface to the platform's evidence corpus. It is designed around a strict <strong>retrieve-first</strong> principle (ADR-001 guardrail): no LLM generation occurs without a retrieved evidence pack. This ensures that every answer is grounded in observed signals, not hallucinated policy positions.</p>
+
+<h3>4.1 RAG Pipeline</h3>
+
+<div class="diagram-legend">
+  <div class="legend-item"><div class="legend-dot legend-built"></div><span><strong>LIVE</strong> — rag-query-service, guardrail-service, embedding-service all running</span></div>
+  <div class="legend-item"><div class="legend-dot legend-gap"></div><span><strong>GAP G3</strong> — cross-encoder reranker (roadmap, trigger: relevance below target)</span></div>
+</div>
+
+<div class="mermaid-wrap">
+<div class="mermaid">
+flowchart TD
+    Q(["💬 User Query\n(ad_ops · reviewer · campaign_manager)"])
+
+    subgraph GW["Chat Gateway  ✅ LIVE"]
+        GW1["POST /api/v1/chat\nRBAC auth check\n(Spring Security / Cognito — Gap G1)"]
+    end
+
+    subgraph GUARD_IN["Tier-3 Guardrail — Inbound  ✅ LIVE"]
+        G1["guardrail-service\nClaude Haiku 4.5 (isolated persona)\nPrompt injection check\nThin-evidence detection"]
+    end
+
+    subgraph INTENT["Intent Classifier  ✅ LIVE"]
+        IC["Intent: why_mfa · signal_attribution\nchange_detection · counter_evidence\nsimilar_domains (RAG v2)"]
+    end
+
+    subgraph EMBED["Query Embedding  ✅ LIVE"]
+        EM["embedding-service\nall-MiniLM-L6-v2 (HF TEI)\n384-dim vector"]
+    end
+
+    subgraph RETRIEVAL["Hybrid Retrieval  ✅ LIVE"]
+        direction LR
+        R_SQL["SQL Path\nPostgres\nclassification_result\n+ explanation\n+ top_signals"]
+        R_VEC["k-NN Path\nElasticsearch\nsignals-index\npolicy-docs-index\nhistorical-classifications\nreviewer-feedback-index"]
+        R_RRF["RRF Fusion\nReciprocal Rank Fusion\nof SQL + k-NN results"]
+        R_RANK["🔧 GAP G3:\nCross-encoder reranker\nTop-K rerank before\ngeneration"]
+    end
+
+    subgraph PACK["Evidence Packager  ✅ LIVE"]
+        EP["Assemble evidence pack\ndoc_type: signal_snapshot ·\nexplanation · policy ·\nreviewer_note · audit\nevidence_hash resolved"]
+    end
+
+    subgraph CACHE["Response Cache  ✅ LIVE"]
+        CA["Redis\nkey = evidence_hash\nTTL = 24h\nCache HIT → skip LLM"]
+    end
+
+    subgraph GEN["Grounded Generation  ✅ LIVE"]
+        LLM["rag-query-service\nClaude Sonnet 5 (AWS Bedrock)\nSystem prompt: answer only\nfrom evidence pack\nNo open-web access (ADR-001)\nTemp = 0"]
+    end
+
+    subgraph CITVAL["Citation Validator  ✅ LIVE"]
+        CV["Every claim in 'answer'\nmust cite a chunk_id\nfrom retrieved pack.\nREJECT + escalate\non mismatch"]
+    end
+
+    subgraph GUARD_OUT["Tier-3 Guardrail — Outbound  ✅ LIVE"]
+        G2["guardrail-service\n(same isolated instance)\nFewer than 2 solid facts\n→ escalate SEND_FOR_REVIEW"]
+    end
+
+    subgraph RESP["RAGResponse  ✅ LIVE"]
+        RS["answer · confidence\ncitations[] · top_signals[]\nrecommended_action\nlimitations"]
+    end
+
+    AUD[("audit_log\nevent written\nevidence_hash bound\n✅ LIVE")]
+
+    Q --> GW --> GUARD_IN
+    GUARD_IN -->|"clean"| INTENT
+    GUARD_IN -->|"injection detected"| RS
+    INTENT --> EMBED
+    EMBED --> RETRIEVAL
+    R_SQL --> R_RRF
+    R_VEC --> R_RRF
+    R_RRF --> R_RANK
+    R_RANK --> PACK
+    PACK --> CACHE
+    CACHE -->|"cache HIT"| RESP
+    CACHE -->|"cache MISS"| GEN
+    GEN --> CITVAL
+    CITVAL -->|"valid"| GUARD_OUT
+    CITVAL -->|"invalid"| GEN
+    GUARD_OUT --> RESP
+    RESP --> CACHE
+    RESP --> AUD
+
+    style R_RANK fill:#fefce8,stroke:#f59e0b,stroke-width:2px,stroke-dasharray:6 4
+    style AUD fill:#f0fdf4,stroke:#16a34a
+    style CACHE fill:#eff6ff,stroke:#2563eb
+</div>
+</div>
+<p class="diagram-caption">Figure 4.1 — RAG bot request path. Solid nodes are verified live (rag-query-service, guardrail-service, embedding-service). The cross-encoder reranker (G3) is a roadmap item triggered if relevance scores fall below target with real traffic.</p>
+
+<h3>4.2 Grounding Corpus</h3>
+<table>
+  <thead><tr><th>doc_type</th><th>Content Description</th><th>Chunking Strategy</th><th>Metadata Filters</th></tr></thead>
+  <tbody>
+    <tr><td><code>signal_snapshot</code></td><td>Structured feature metrics from crawl pipeline (16→60 features, JSONB)</td><td>One document per url_id + version; flat key/value serialisation</td><td><code>domain</code>, <code>url</code>, <code>crawl_ts</code>, <code>schema_version</code></td></tr>
+    <tr><td><code>explanation</code></td><td>Human-readable classification narrative citing top SHAP signals</td><td>One document per classification event (linked to signal_snapshot version)</td><td><code>classification_id</code>, <code>tier</code>, <code>url_id</code></td></tr>
+    <tr><td><code>policy</code></td><td>Internal MFA policy documents, ANA/IAB guidelines, Ad Ops SOPs</td><td>500-token overlapping chunks with 50-token stride</td><td><code>policy_version</code>, <code>doc_section</code></td></tr>
+    <tr><td><code>reviewer_note</code></td><td>Free-text override notes and structured reason codes from reviewers</td><td>One document per review event</td><td><code>reviewer_id</code>, <code>domain</code>, <code>override_reason</code></td></tr>
+    <tr><td><code>audit</code></td><td>Immutable decision trail records (all classification, RAG, override events)</td><td>One document per audit event (append-only)</td><td><code>entity_id</code>, <code>action</code>, <code>actor_id</code></td></tr>
+  </tbody>
+</table>
+
+<h3>4.3 Query Routing</h3>
+<table>
+  <thead><tr><th>Query Type</th><th>Example</th><th>Retrieval Path</th><th>RAG Version</th></tr></thead>
+  <tbody>
+    <tr><td>Why MFA?</td><td>"Why is example.com flagged as MFA?"</td><td>SQL: latest classification + top_signals + explanation</td><td>v1 (MVP)</td></tr>
+    <tr><td>Signal attribution</td><td>"Which signals contributed most to the High tier?"</td><td>SQL: SHAP contributions from signal store</td><td>v1 (MVP)</td></tr>
+    <tr><td>Change detection</td><td>"What changed since the last review?"</td><td>SQL: diff two signal_snapshot versions by url_id</td><td>v1 (MVP)</td></tr>
+    <tr><td>Counter evidence</td><td>"What evidence supports Non-MFA classification?"</td><td>SQL: contradicting signals + reviewer overrides</td><td>v1 (MVP)</td></tr>
+    <tr><td>Similar domains</td><td>"Show me other domains similar to this MFA site"</td><td>OpenSearch k-NN with <code>tier IN (MFA_High, MFA_Medium)</code></td><td>v2 (Production)</td></tr>
+  </tbody>
+</table>
+
+<h3>4.4 Response Contract</h3>
+<pre><code>{
+  "answer": "This domain is classified as MFA_High (score: 0.962, confidence: high). 
+             Primary evidence [citation: sig-abc123]: ad_to_content_ratio is 0.78 — 
+             substantially above the 0.65 threshold. The classifier used was 'rules' 
+             (Rule R-01: extreme_ad_density). Per platform policy [citation: pol-mfa-001]: 
+             sites with ad_to_content_ratio > 0.65 and content_word_count < 250 
+             are classified as MFA_High per ANA/IAB guidelines.",
+
+  "confidence": "high",     // high | medium | low | insufficient
+
+  "citations": [
+    { "source": "signal_snapshot",  "id": "sig-abc123",  "excerpt": "ad_to_content_ratio=0.78, refresh_events_60s=7..." },
+    { "source": "classification",   "id": "cls-abc123",  "excerpt": "tier=MFA_High, score=0.962, classifier=rules" },
+    { "source": "policy",           "id": "pol-mfa-001", "excerpt": "ad_to_content_ratio > 0.65 AND content_word_count < 250 = MFA_High" }
+  ],
+
+  "top_signals": [
+    { "name": "ad_to_content_ratio",  "value": 0.78,  "contribution": 0.58 },
+    { "name": "content_word_count",   "value": 180,   "contribution": 0.31 },
+    { "name": "refresh_events_60s",   "value": 7,     "contribution": 0.11 }
+  ],
+
+  "recommended_action": "block",     // block | allow | recheck | human_review
+
+  "limitations": "Evidence is based on a single crawl snapshot (direct persona only). 
+                  Traffic enrichment signals (paid_traffic_pct, domain_age_days) are 
+                  not yet available in this build (TODO(MVP))."
+}</code></pre>
+
+<h3>4.5 Anti-Hallucination Pipeline</h3>
+<ol>
+  <li><strong>Retrieve-first:</strong> No LLM generation is attempted without a non-empty evidence pack. If the evidence pack is empty, the response is <code>confidence="insufficient"</code> with <code>recommended_action="human_review"</code>.</li>
+  <li><strong>Citation validator:</strong> Every factual claim in the <code>answer</code> field must reference a <code>citations[].id</code> that exists in the retrieved pack. The validator rejects the LLM output and escalates if any citation ID is not found in the evidence pack chunks.</li>
+  <li><strong>Retrieval score threshold:</strong> If all retrieved chunks have similarity score below a configurable threshold, the system responds with <code>confidence="insufficient"</code> and does not attempt generation. This prevents low-confidence hallucination on out-of-distribution queries.</li>
+  <li><strong>Conflicting signals handling:</strong> When the evidence pack contains contradicting signals (e.g., high ad density but reviewer override marking Non_MFA), the LLM is instructed to present both sides explicitly in the answer and default to <code>recommended_action="human_review"</code>.</li>
+</ol>
+
+<h3>4.6 Cost Controls</h3>
+<ul>
+  <li><strong>Response caching:</strong> Grounded RAG responses are cached in Redis for 24 hours keyed by <code>evidence_hash</code>. Repeated queries about the same URL and signal version are served from cache without LLM invocation.</li>
+  <li><strong>Token caps:</strong> Evidence pack passed to the LLM is capped at a configurable token limit (default: 4000 tokens). Large corpora are ranked by relevance score before truncation.</li>
+  <li><strong>Batch indexing:</strong> OpenSearch vector indexing for new signal snapshots runs as an off-peak batch job to avoid competing with query traffic during business hours.</li>
+  <li><strong>Model tiering:</strong> Explanation generation uses Claude Haiku; RAG answers use Claude Sonnet. Haiku is ~4–8× cheaper per query for structured text output.</li>
+</ul>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 5: RISK AND GUARDRAIL DESIGN
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s5">
+<h2><span class="section-number">5.</span> Risk and Guardrail Design</h2>
+
+<table>
+  <thead><tr><th>Risk</th><th>Severity</th><th>Control Mechanism</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Hallucination</strong> — LLM invents policy rules or signals not in the evidence</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>Retrieve-first architecture; citation validator rejects ungrounded claims; structured JSON output schema; LLM receives evidence pack only — no open-web access</td>
+      <td><span class="badge badge-blue">MVP</span></td>
+    </tr>
+    <tr>
+      <td><strong>Prompt Injection</strong> — adversarial instructions embedded in crawled page content or user queries</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>Input sanitiser blocks known injection patterns; system prompt isolation (evidence-only context); whitelisted tool calls; crawled page content is stored as data — never parsed as instructions</td>
+      <td><span class="badge badge-blue">MVP</span></td>
+    </tr>
+    <tr>
+      <td><strong>False Positives</strong> — legitimate publisher incorrectly blocked</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>5-tier output (not binary); HITL for Medium/Uncertain and high-spend URLs; page-level scoring (not domain-only); reviewer override with audit trail; spend-weighted escalation priority</td>
+      <td><span class="badge badge-yellow">Designed</span></td>
+    </tr>
+    <tr>
+      <td><strong>False Negatives</strong> — MFA site passes through undetected</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>Scheduled re-crawl of known borderline domains; reviewer feedback loop feeds retraining; feature drift monitoring with CloudWatch alerts; campaign performance anomaly signals</td>
+      <td><span class="badge badge-blue">MVP</span></td>
+    </tr>
+    <tr>
+      <td><strong>Data Leakage</strong> — advertiser A's signals visible to advertiser B</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>Tenant isolation in Postgres (row-level security planned for Production); RBAC scoping reviewers to assigned queues; PII scrubbing in logs; secrets in KMS/Secrets Manager; no cross-advertiser signal sharing without consent</td>
+      <td><span class="badge badge-blue">MVP</span></td>
+    </tr>
+    <tr>
+      <td><strong>Reviewer Override Abuse</strong> — reviewer systematically overriding valid MFA classifications</td>
+      <td><span class="badge badge-yellow">Medium</span></td>
+      <td>Mandatory structured reason code (enum, not free text); dual-control required for bulk block operations; <code>final_label</code> stored alongside ML score (never replaces); every override writes immutable audit event; override patterns monitored for anomalies</td>
+      <td><span class="badge badge-yellow">Designed</span></td>
+    </tr>
+    <tr>
+      <td><strong>Auditability</strong> — inability to reconstruct why a URL was blocked</td>
+      <td><span class="badge badge-red">High</span></td>
+      <td>Immutable audit log (DynamoDB + S3 Object Lock); <code>evidence_hash</code> on every score/explanation/RAG answer/review event; 7-year configurable retention; audit export API for compliance review</td>
+      <td><span class="badge badge-yellow">Designed</span></td>
+    </tr>
+    <tr>
+      <td><strong>Cost Runaway</strong> — LLM API costs spike unexpectedly</td>
+      <td><span class="badge badge-yellow">Medium</span></td>
+      <td>Crawl budget per domain (configurable max re-crawl frequency); LLM token caps per query; 24h explanation cache keyed by evidence_hash; batch off-peak indexing; CloudWatch cost attribution with alerting thresholds</td>
+      <td><span class="badge badge-blue">MVP</span></td>
+    </tr>
+    <tr>
+      <td><strong>Crawler Abuse / Legal</strong> — crawling causing legal or operational issues</td>
+      <td><span class="badge badge-yellow">Medium</span></td>
+      <td>Configurable robots.txt compliance; rate limiting with backoff; user-agent identification; legal review required per jurisdiction for crawl targets; crawl budget controls prevent hammering individual domains</td>
+      <td><span class="badge badge-yellow">Designed</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>5.1 Reviewer Override Protocol</h3>
+<p>The reviewer override workflow is designed to capture expert human judgment without corrupting the ML model's ground truth labels. Key design decisions:</p>
+<ul>
+  <li><strong>Mandatory reason code enum:</strong> Reviewers must select a structured reason code from: <code>false_positive_publisher</code>, <code>referral_delta_expected</code>, <code>policy_exception</code>, <code>insufficient_evidence</code>, <code>vendor_disagreement</code>. Free-text notes are optional and supplementary — they do not substitute for the structured code.</li>
+  <li><strong>final_label stored alongside ML score:</strong> The override writes a <code>final_label</code> and <code>override_reason</code> as new fields on the review record. The ML <code>mfa_score</code>, <code>tier</code>, and <code>confidence</code> are never modified or deleted. Both are available for model retraining, audit, and RAG grounding.</li>
+  <li><strong>Dual-control for bulk operations:</strong> Any blocklist export covering more than a configurable threshold of domains in a single operation requires sign-off from a second reviewer with <code>admin</code> or <code>reviewer</code> RBAC role.</li>
+  <li><strong>Audit event on every override:</strong> Every override call to <code>POST /api/v1/reviews</code> writes an immutable audit event with <code>evidence_hash</code> binding the override to the exact signal snapshot that informed the ML classification.</li>
+</ul>
+
+<h3>5.2 Audit Event Contract</h3>
+<pre><code>{
+  "event_id":      "uuid4",           // globally unique, immutable
+  "entity_type":   "classification | review | rag_query | explanation",
+  "entity_id":     "url_id | review_id | query_id",
+  "action":        "classification.scored | review.override | rag.answer | explanation.generated",
+  "actor_id":      "ml-worker | reviewer_jane_doe | api_user_001",
+  "occurred_at":   "2026-07-10T14:32:00Z",
+  "evidence_hash": "sha256hex64chars",  // binds to exact signal snapshot
+  "payload":       {                    // JSONB — event-specific details
+    "tier":         "MFA_High",
+    "mfa_score":    0.962,
+    "classifier":   "rules",
+    // ... event-specific fields
+  }
+}</code></pre>
+<div class="info-box">
+  <strong>Append-only guarantee:</strong> The audit store is DynamoDB with S3 Object Lock (WORM mode) in production. No application code path supports UPDATE or DELETE on audit records. This is enforced at the IAM policy level — the application role has <code>PutItem</code> but not <code>UpdateItem</code> or <code>DeleteItem</code>.
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 6: MVP VS PRODUCTION ROADMAP
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s6">
+<h2><span class="section-number">6.</span> MVP vs Production Roadmap</h2>
+
+<h3>6.1 Phase Comparison</h3>
+<table>
+  <thead><tr><th>Capability</th><th><span class="badge badge-green">Baseline ✅ Done</span></th><th><span class="badge badge-yellow">MVP 🟡 In Progress</span></th><th><span class="badge badge-blue">Production 🔵 Planned</span></th></tr></thead>
+  <tbody>
+    <tr><td><strong>Crawl</strong></td><td>Single-persona, basic DOM extraction</td><td>Dual-persona + 60s refresh dwell</td><td>Auto-scaling crawler fleet, multi-region</td></tr>
+    <tr><td><strong>Signal Schema</strong></td><td>v1.1 — 16 crawl features</td><td>v2 — ~60 features + enrichment</td><td>v3+ — campaign signals, OpenRTB metrics</td></tr>
+    <tr><td><strong>ML Model</strong></td><td>Rules + XGBoost (v1 artifacts)</td><td>Calibrated confidence, feature expansion</td><td>Monthly auto-retrain, shadow A/B mode</td></tr>
+    <tr><td><strong>Explanations</strong></td><td>Jinja2 templates</td><td>LLM (Bedrock Claude Haiku) with citations</td><td>Multi-language, expanded template library</td></tr>
+    <tr><td><strong>REST API</strong></td><td>All 11 endpoints implemented</td><td>Batch DSP ingestion, signed S3 URLs</td><td>Pre-bid API (&lt;200ms), OpenRTB webhook sink</td></tr>
+    <tr><td><strong>RAG Bot</strong></td><td>Not implemented</td><td>v1: SQL + vector over signals, policies, classifications</td><td>v2: similar-domain k-NN, change detection, reviewer corpus</td></tr>
+    <tr><td><strong>Review Console</strong></td><td>CSV export only</td><td>React+TS console, queue, override workflow, bot UI</td><td>SSO (Okta), full RBAC, mobile-responsive</td></tr>
+    <tr><td><strong>Audit Log</strong></td><td>Basic Postgres append</td><td>Immutable v1 (DynamoDB / append-only)</td><td>7-year retention, S3 Object Lock, compliance export</td></tr>
+    <tr><td><strong>Vector Store</strong></td><td>Not implemented</td><td>OpenSearch Serverless (hybrid BM25+k-NN)</td><td>Multi-region, advanced metadata filtering</td></tr>
+    <tr><td><strong>Observability</strong></td><td>Basic CloudWatch</td><td>X-Ray traces, SLO dashboards, drift alerts</td><td>Full APM, cost attribution per team/campaign</td></tr>
+    <tr><td><strong>Auth</strong></td><td>Development only (no auth)</td><td>API Gateway + Cognito, RBAC stub</td><td>Okta SSO, full RBAC, SOC2-aligned controls</td></tr>
+    <tr><td><strong>Infrastructure</strong></td><td>Docker Compose (local)</td><td>Terraform MVP-1 (RDS, S3, SQS, ECS)</td><td>Multi-region DR, WAF, Shield, rate limiting</td></tr>
+  </tbody>
+</table>
+
+<h3>6.2 Intentionally Excluded from MVP</h3>
+<div class="risk-box">
+  <ul>
+    <li><strong>Sub-second pre-bid integration</strong> — requires Production-grade caching infrastructure and DSP partnership agreements</li>
+    <li><strong>Mobile/CTV MFA detection</strong> — separate signal pipelines required (Pixalate/IAS have dedicated mobile/CTV models)</li>
+    <li><strong>Auto-retraining pipeline</strong> — requires stable reviewer feedback loop and model registry; deferred to Production</li>
+    <li><strong>Multi-tenant SaaS hardening</strong> — row-level security, tenant isolation, billing metering — Production scope</li>
+    <li><strong>Federated learning across advertisers</strong> — Future phase — requires privacy-preserving ML infrastructure</li>
+    <li><strong>On-device/edge scoring</strong> — Future phase — requires model compression and edge deployment tooling</li>
+    <li><strong>Similar-domain RAG search</strong> — RAG v2 (Production) — k-NN over MFA network fingerprints not available until larger index built</li>
+  </ul>
+</div>
+
+<h3>6.3 MVP Sprint Plan (6 Sprints × 2 Weeks)</h3>
+<table>
+  <thead><tr><th>Sprint</th><th>Focus</th><th>Key Task IDs</th><th>Exit Criteria</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>S1</strong> Wk 1–2</td>
+      <td>Infrastructure foundation</td>
+      <td>MVP-1.1 Terraform (RDS, S3, SQS, ECS)<br>MVP-1.2 S3 evidence store<br>MVP-1.3 SQS queues (batch + priority)<br>MVP-1.4 Dual-persona crawler<br>MVP-1.6 Redis domain cache (24h TTL)</td>
+      <td>Terraform applies in poc env; dual-persona smoke test passes; Redis compose service running</td>
+    </tr>
+    <tr>
+      <td><strong>S2</strong> Wk 3–4</td>
+      <td>Crawl upgrade + feature expansion</td>
+      <td>MVP-1.5 60s dwell + refresh detection<br>MVP-2.1 Schema v2 (~60 features)<br>MVP-2.2 Calibrator productionised</td>
+      <td><code>referral_direct_delta_score</code> on snapshots; schema migration doc complete; confidence bands validated</td>
+    </tr>
+    <tr>
+      <td><strong>S3</strong> Wk 5–6</td>
+      <td>Scoring + HITL + LLM explanations</td>
+      <td>MVP-2.3 Review queue table + GET endpoint<br>MVP-2.4 Bedrock LLM explanations (security gate required)<br>MVP-2.5 POST /api/v1/reviews (override + reason enum)<br>MVP-2.6 GET /api/v1/blocklist</td>
+      <td>Override preserves ML score; audit event on every review; security review gate passed for MVP-2.4</td>
+    </tr>
+    <tr>
+      <td><strong>S4</strong> Wk 7–8</td>
+      <td>RAG v1</td>
+      <td>MVP-3.1 OpenSearch Serverless index<br>MVP-3.2 Indexing worker (5 doc_types)<br>MVP-3.3 Query router (SQL vs vector)<br>MVP-3.4 Evidence packager + Bedrock generation<br>MVP-3.5 Citation validator<br>MVP-3.6 POST /api/v1/chat (security gate required)</td>
+      <td>Test query set passes citation validator; audit per chat query; security review gate passed for MVP-3.6</td>
+    </tr>
+    <tr>
+      <td><strong>S5</strong> Wk 9–10</td>
+      <td>Review console + auth</td>
+      <td>MVP-4.1 React+TS frontend bootstrap<br>MVP-4.2 Review queue UI (filters, signal viz)<br>MVP-4.3 Override workflow UI<br>MVP-4.4 Bot chat UI with citations<br>MVP-4.5 Immutable audit export<br>MVP-4.6 API Gateway + Cognito RBAC stub<br>MVP-4.7 QuickSight/Grafana dashboard</td>
+      <td>Reviewer can override end-to-end via UI; bot renders citations; RBAC roles enforced</td>
+    </tr>
+    <tr>
+      <td><strong>S6</strong> Wk 11–12</td>
+      <td>Pilot + shadow mode</td>
+      <td>MVP-5.1 Shadow mode runbook (score without block enforcement)<br>MVP-5.2 DSP inventory CSV/S3 batch ingestion<br>MVP-5.3 Ad Ops pilot sign-off (1–2 advertisers)<br>MVP-5.4 Full security review (RAG, auth, audit)</td>
+      <td>MVP exit checklist complete; shadow mode 4 weeks; security findings resolved; blocklist export approved</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>6.4 MVP Exit Checklist</h3>
+<div class="done-box">
+  <ul>
+    <li>☐ Dual-persona crawl + refresh signals in production crawl path</li>
+    <li>☐ LLM explanations with citations; LLM not in classifier path (ADR-001)</li>
+    <li>☐ RAG v1 passes citation validator on representative test query set</li>
+    <li>☐ Reviewer console override + audit trail end-to-end</li>
+    <li>☐ Shadow mode completed (4 weeks, 1–2 advertiser pilots)</li>
+    <li>☐ Blocklist export approved by Ad Ops lead</li>
+    <li>☐ MVP-5.4 security findings resolved and signed off</li>
+    <li>☐ Precision ≥ 85%, Recall ≥ 70% maintained on expanded feature set</li>
+    <li>☐ SLO targets met: API p99 &lt;500ms, crawl success &gt;90%</li>
+  </ul>
+</div>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 7: ESTIMATION
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s7">
+<h2><span class="section-number">7.</span> Estimation</h2>
+
+<h3>7.1 Team Roles and FTE</h3>
+<table>
+  <thead><tr><th>Role</th><th>FTE</th><th>Phase</th><th>Primary Responsibilities</th></tr></thead>
+  <tbody>
+    <tr><td>Lead / Solution Architect</td><td>0.5</td><td>POC → Prod</td><td>ADRs, scope gates, cross-layer design, security review gate sign-off, stakeholder alignment</td></tr>
+    <tr><td>Backend / Platform Engineers (×2)</td><td>2.0</td><td>POC → Prod</td><td>FastAPI endpoints, workers, Postgres schema, Redis cache, SQS integration, audit writer, RBAC</td></tr>
+    <tr><td>ML Engineer</td><td>1.0</td><td>POC → Prod</td><td>Rules engine, XGBoost training, calibrator, SHAP, explanation templates, model artifacts</td></tr>
+    <tr><td>Data Engineer</td><td>1.0</td><td>MVP → Prod</td><td>Feature pipeline, enrichment workers, S3 Parquet data lake, training data lineage, schema migrations</td></tr>
+    <tr><td>Frontend Engineer (Review UI + Bot)</td><td>1.0</td><td>MVP → Prod</td><td>React+TypeScript reviewer console, override workflow, bot chat UI, signal visualisation</td></tr>
+    <tr><td>DevOps / SRE</td><td>0.5</td><td>MVP → Prod</td><td>Terraform, ECS, CI/CD, CloudWatch SLOs, X-Ray, cost attribution, DR runbooks</td></tr>
+    <tr><td>Ad Ops SME / QA</td><td>0.5</td><td>POC → Prod</td><td>Gold-label dataset, explanation quality review, pilot sign-off, integration testing</td></tr>
+    <tr><td>Product Manager</td><td>0.5</td><td>All phases</td><td>Sprint planning, stakeholder communication, roadmap prioritisation, pilot coordination</td></tr>
+    <tr style="background:#eff6ff;font-weight:600;"><td>Total peak (MVP)</td><td>~7–8 FTE</td><td>MVP sprint S1–S6</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h3>7.2 Timeline</h3>
+<table>
+  <thead><tr><th>Phase</th><th>Duration</th><th>Cumulative</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>POC (Baseline)</td><td>6–8 weeks</td><td>~2 months</td><td><span class="badge badge-green">✅ Complete — 2026-07-10</span></td></tr>
+    <tr><td>MVP pilot</td><td>10–12 weeks</td><td>~5 months</td><td><span class="badge badge-yellow">🟡 In progress (MVP-S1 starting)</span></td></tr>
+    <tr><td>Production hardening</td><td>12–16 weeks</td><td>~8–9 months</td><td><span class="badge badge-gray">Blocked on MVP exit</span></td></tr>
+    <tr style="background:#eff6ff;font-weight:600;"><td>Total end-to-end</td><td>~8–9 months</td><td>—</td><td>—</td></tr>
+  </tbody>
+</table>
+
+<h3>7.3 Monthly Infrastructure Cost (AWS)</h3>
+<p>Assumptions: 500K URLs/month crawled (production pilot scale), 50K RAG queries/month, 20K daily active classifications cached in Redis.</p>
+<table>
+  <thead><tr><th>Infrastructure Item</th><th>AWS Range (USD/mo)</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>ECS Fargate crawler pool (10–30 workers)</td><td>$3,000 – $8,000</td><td>Dominant cost; scales linearly with URL volume</td></tr>
+    <tr><td>OpenSearch Serverless</td><td>$1,500 – $4,000</td><td>Index size + query OCU consumption</td></tr>
+    <tr><td>RDS Postgres (Multi-AZ) + ElastiCache Redis</td><td>$800 – $2,000</td><td>db.t3.medium baseline; read replica for Production</td></tr>
+    <tr><td>S3 artifacts + CloudFront</td><td>$300 – $1,000</td><td>Screenshots + HTML + Parquet data lake</td></tr>
+    <tr><td>Lambda / API Gateway</td><td>$200 – $800</td><td>Low volume at pilot scale; spiky on batch days</td></tr>
+    <tr><td>LLM APIs (Bedrock — explanations + RAG)</td><td>$2,000 – $6,000</td><td>Mitigated by 24h evidence_hash cache; Claude Haiku for explanations</td></tr>
+    <tr><td>Observability (CloudWatch, X-Ray)</td><td>$500 – $1,500</td><td>Log retention, custom metrics, tracing</td></tr>
+    <tr style="background:#eff6ff;font-weight:600;"><td><strong>Total (500K URLs/mo)</strong></td><td><strong>~$8,000 – $23,000/mo</strong></td><td>Wide range due to crawler elasticity</td></tr>
+    <tr style="background:#fef9c3;"><td><strong>Total (5M URLs/mo)</strong></td><td><strong>~$40,000 – $90,000/mo</strong></td><td>Crawler-dominated; aggressive caching reduces LLM share</td></tr>
+  </tbody>
+</table>
+
+<h3>7.4 Key Dependencies</h3>
+<ul>
+  <li><strong>Labeled MFA dataset:</strong> 615 URLs in gold-label set (POC). Ongoing Ad Ops review is required to grow the training set for MVP feature expansion and Production auto-retraining.</li>
+  <li><strong>DSP inventory feed access:</strong> CSV/S3 export from one or more DSPs needed for batch ingestion. API-level access accelerates near-real-time path.</li>
+  <li><strong>Legal crawl approval:</strong> Formal legal sign-off for crawling third-party ad inventory URLs in each target jurisdiction. Blocking dependency for Production rollout.</li>
+  <li><strong>Ad Ops workflow adoption:</strong> Reviewers must commit to a 24-hour SLA for HITL queue items flagged as high-spend Uncertain. Without this, the feedback loop degrades model accuracy over time.</li>
+  <li><strong>Traffic enrichment API:</strong> Similarweb-style third-party API for <code>paid_traffic_pct</code>, <code>organic_traffic_pct</code>, and related signals. Required for MVP feature expansion. Contract and data access SLA must be confirmed before MVP-S2.</li>
+</ul>
+
+<h3>7.5 Rollout Assumptions</h3>
+<ul>
+  <li>Shadow mode for 4 weeks before blocklist export is enabled in production — scores computed but no blocking enforced.</li>
+  <li>1–2 advertiser pilot accounts used to validate precision/recall on live inventory before global rollout.</li>
+  <li>Reviewer SLA: 24h for high-spend Uncertain URLs; 72h for all other HITL queue items.</li>
+  <li>Model performance reviewed monthly by ML Engineer with Ad Ops SME; retraining triggered if Precision drops below 83% on reviewer-labelled samples.</li>
+</ul>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 8: CLOUD SERVICE MAPPING AND SCALE PLAN
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s8">
+<h2><span class="section-number">8.</span> Cloud Service Mapping &amp; Scale Plan</h2>
+
+<h3>8.1 AWS Primary Service Map</h3>
+<table>
+  <thead><tr><th>Capability</th><th>AWS Service</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>API / Auth</td><td>API Gateway + Cognito (+ Okta federation in Production)</td><td>WAF rate limiting in front of API Gateway</td></tr>
+    <tr><td>Batch orchestration</td><td>Step Functions + EventBridge (scheduled)</td><td>Step Functions Express Workflows for high-volume nightly batch</td></tr>
+    <tr><td>Stream ingestion</td><td>Kinesis Data Streams → Lambda</td><td>Production only — OpenRTB log sink for bid-stream signals</td></tr>
+    <tr><td>Crawler workers</td><td>ECS Fargate + SQS (Standard batch / FIFO priority)</td><td>Auto-scaling with target tracking; spot capacity for batch</td></tr>
+    <tr><td>Object storage</td><td>S3 (evidence artifacts: HTML, screenshots, Parquet)</td><td>S3 Object Lock (WORM) for audit artifacts</td></tr>
+    <tr><td>Signal / classification DB</td><td>RDS PostgreSQL (JSONB)</td><td>Multi-AZ for Production; read replica for RAG SQL queries</td></tr>
+    <tr><td>Hot cache</td><td>ElastiCache Redis (Cluster mode disabled for MVP)</td><td>Domain tier cache (24h TTL); RAG response cache; Cluster mode for Production</td></tr>
+    <tr><td>Vector / hybrid search</td><td>OpenSearch Serverless</td><td>Hybrid BM25 + k-NN; auto-scales with OCU billing</td></tr>
+    <tr><td>LLM</td><td>AWS Bedrock (Claude Sonnet / Haiku)</td><td>No custom model deployment; on-demand API; GPT-4o via Azure OpenAI private link as alternative</td></tr>
+    <tr><td>Dashboards</td><td>Amazon QuickSight (SPICE)</td><td>Grafana as alternative for Engineering metrics</td></tr>
+    <tr><td>Immutable audit</td><td>DynamoDB (PutItem-only IAM) + S3 Object Lock</td><td>Append-only enforced at IAM level</td></tr>
+    <tr><td>Secrets</td><td>Secrets Manager + KMS (CMK)</td><td>All API keys and DB credentials via Secrets Manager; KMS for data at rest</td></tr>
+    <tr><td>WAF / DDoS</td><td>AWS WAF + Shield Standard (Shield Advanced for Production)</td><td>Rate limiting, IP-based rules, OWASP ruleset</td></tr>
+    <tr><td>Tracing / monitoring</td><td>CloudWatch Metrics + Logs + X-Ray</td><td>X-Ray service map for cross-service latency analysis</td></tr>
+  </tbody>
+</table>
+
+<h3>8.2 Azure Equivalents</h3>
+<table>
+  <thead><tr><th>Capability</th><th>Azure Service</th></tr></thead>
+  <tbody>
+    <tr><td>API / Auth</td><td>API Management + Entra ID (Azure AD)</td></tr>
+    <tr><td>Batch orchestration</td><td>Azure Data Factory + Logic Apps</td></tr>
+    <tr><td>Stream ingestion</td><td>Azure Event Hubs → Azure Functions</td></tr>
+    <tr><td>Crawler workers</td><td>Container Apps (serverless) / AKS</td></tr>
+    <tr><td>Object storage</td><td>Azure Blob Storage (with Immutable Blob for audit)</td></tr>
+    <tr><td>Signal / classification DB</td><td>Azure Database for PostgreSQL — Flexible Server</td></tr>
+    <tr><td>Hot cache</td><td>Azure Cache for Redis (Enterprise tier for cluster mode)</td></tr>
+    <tr><td>Vector / hybrid search</td><td>Azure AI Search (hybrid BM25 + vector)</td></tr>
+    <tr><td>LLM</td><td>Azure OpenAI Service (GPT-4o / GPT-4o-mini) via private endpoint</td></tr>
+    <tr><td>Dashboards</td><td>Power BI (embedded or service)</td></tr>
+    <tr><td>Immutable audit</td><td>Azure Cosmos DB (append-only) + Immutable Blob Storage</td></tr>
+    <tr><td>Secrets</td><td>Azure Key Vault (secrets + keys)</td></tr>
+    <tr><td>WAF / DDoS</td><td>Azure DDoS Protection + Azure Front Door WAF</td></tr>
+  </tbody>
+</table>
+
+<h3>8.3 GCP Equivalents</h3>
+<table>
+  <thead><tr><th>Capability</th><th>GCP Service</th></tr></thead>
+  <tbody>
+    <tr><td>API / Auth</td><td>Cloud Endpoints + Identity Platform (Firebase Auth)</td></tr>
+    <tr><td>Batch orchestration</td><td>Cloud Composer (managed Airflow)</td></tr>
+    <tr><td>Stream ingestion</td><td>Pub/Sub + Dataflow</td></tr>
+    <tr><td>Crawler workers</td><td>Cloud Run (serverless) / GKE Autopilot</td></tr>
+    <tr><td>Object storage</td><td>Cloud Storage (with Object Hold for audit)</td></tr>
+    <tr><td>Signal / classification DB</td><td>Cloud SQL for PostgreSQL</td></tr>
+    <tr><td>Hot cache</td><td>Memorystore for Redis</td></tr>
+    <tr><td>Vector / hybrid search</td><td>Vertex AI Vector Search (with BigQuery integration)</td></tr>
+    <tr><td>LLM</td><td>Vertex AI (Gemini Pro / Gemini Flash)</td></tr>
+    <tr><td>Dashboards</td><td>Looker (or Looker Studio)</td></tr>
+    <tr><td>Immutable audit</td><td>BigQuery (append-only tables) + Cloud Logging</td></tr>
+    <tr><td>Secrets</td><td>Secret Manager + Cloud KMS</td></tr>
+    <tr><td>WAF / DDoS</td><td>Cloud Armor</td></tr>
+  </tbody>
+</table>
+
+<h3>8.4 Scale Plan</h3>
+<table>
+  <thead><tr><th>Scale Tier</th><th>Volume (URLs/mo)</th><th>Architecture Adjustment</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>Pilot</strong></td>
+      <td>50K – 500K</td>
+      <td>Single-region deployment; 5–10 ECS Fargate crawlers; batch nightly; Postgres sufficient without read replicas; OpenSearch Serverless minimal OCU configuration</td>
+    </tr>
+    <tr>
+      <td><strong>Growth</strong></td>
+      <td>500K – 5M</td>
+      <td>ECS auto-scaling with target tracking (queue depth metric); tiered crawl depth (full article crawl vs homepage-only for low-risk domains); aggressive Redis caching of recent domain tiers; Postgres read replica for RAG SQL queries; OpenSearch OCU scale-out</td>
+    </tr>
+    <tr>
+      <td><strong>Enterprise</strong></td>
+      <td>5M – 50M+</td>
+      <td>Multi-region active-active; pre-computed domain risk cache (Redis) for sub-200ms pre-bid API; separate hot/warm/cold SQS queues by domain risk priority; DynamoDB for online feature serving (replaces Postgres hot path); domain-level crawl dedup (skip re-crawl if signal version is &lt;24h old); approximate scoring for known-clean domains (confidence &gt;0.95)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h3>8.5 Batch + Near-Real-Time Coexistence</h3>
+<table>
+  <thead><tr><th>Queue Type</th><th>Use Case</th><th>Crawl Depth</th><th>SLA</th><th>Signal Reuse</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><strong>SQS Standard</strong> (batch)</td>
+      <td>Nightly full inventory sweep via Step Functions</td>
+      <td>Full crawl + full feature extraction</td>
+      <td>Hours</td>
+      <td>None — full fresh crawl</td>
+    </tr>
+    <tr>
+      <td><strong>SQS FIFO priority</strong> (near-real-time)</td>
+      <td>New placement domains, spend-weighted escalations</td>
+      <td>Shortened crawl — article page only, no 60s dwell</td>
+      <td>&lt;2–5 min</td>
+      <td>Reuse domain metadata cache (&lt;24h TTL)</td>
+    </tr>
+    <tr>
+      <td><strong>Redis cache</strong> (pre-bid)</td>
+      <td>DSP/SSP pre-bid domain risk lookup (Production)</td>
+      <td>No crawl — cached domain tier only</td>
+      <td>&lt;200ms</td>
+      <td>Full reuse — Redis key <code>domain:{d}</code> → latest tier + evidence_hash</td>
+    </tr>
+  </tbody>
+</table>
+</section>
+
+<!-- ══════════════════════════════════════════════════════════════════════
+     SECTION 9: WORKING CODE — ARCHITECTURE WALKTHROUGH
+═══════════════════════════════════════════════════════════════════════ -->
+<section id="s9">
+<h2><span class="section-number">9.</span> Working Code — Architecture Walkthrough</h2>
+
+<p>This section presents annotated excerpts from the actual production-oriented codebase. The implementation follows all architectural decisions documented above and is runnable today via Docker Compose.</p>
+
+<h3>9.1 Classification Pipeline — <code>ml/src/mfa_ml/scoring/pipeline.py</code></h3>
+<p>The <code>classify_snapshot()</code> function is the central orchestrator of the ML pipeline. It implements the cascade pattern (rules → XGBoost → calibrate → tier) and produces a <code>ClassificationOutput</code> that satisfies the platform's output contract.</p>
+<pre><code>def classify_snapshot(
+    signals: dict[str, Any],
+    *,
+    evidence_hash: str,           # SHA-256 of canonical signal JSON — for audit binding
+    artifacts: ScoringArtifacts | None = None,
+    artifact_dir: Path | None = None,
+) -> ClassificationOutput:
+    """Score a single signal snapshot through the full Baseline pipeline."""
+
+    # Load artifacts from disk if not pre-loaded by worker
+    if artifacts is None:
+        artifacts = load_scoring_artifacts(artifact_dir)
+
+    # Step 1: Extract only the known CRAWL_FEATURE_NAMES from the signals blob.
+    # Extra keys (crawl_ts, schema_version) are ignored — prevents feature leakage.
+    features = extract_features(signals)
+
+    # Step 2: Rules engine — deterministic, high-precision.
+    # If a rule fires, return immediately with classifier="rules" and confidence="high".
+    # No XGBoost inference needed — saves cost and latency for obvious MFA cases.
+    rule_match = artifacts.rules_engine.evaluate(features)
+    if rule_match is not None:
+        return ClassificationOutput(
+            tier=rule_match.tier,
+            mfa_score=rule_match.mfa_score,
+            confidence="high",          # rules are high-precision by design
+            top_signals=rule_match.top_signals,
+            explanation=render_explanation(rule_match.tier, rule_match.top_signals),
+            evidence_hash=evidence_hash,  # binds this output to the crawl evidence
+            classifier="rules",
+            schema_version="v1.1",
+        )
+
+    # Step 3: XGBoost ensemble — returns raw probability in [0,1].
+    # predict_proba() uses the feature names in CRAWL_FEATURE_NAMES order.
+    raw_proba = float(artifacts.classifier.predict_proba([features])[0])
+
+    # Step 4: Confidence calibration — raw XGBoost probabilities are
+    # overconfident. Isotonic regression maps them to calibrated probabilities.
+    calibrated = float(artifacts.calibrator.transform(np.array([raw_proba]))[0])
+
+    # Step 5: Map calibrated probability to tier + confidence label.
+    # Thresholds: ≥0.80 → MFA_High/high; ≥0.60 → MFA_Medium/medium; etc.
+    conf_score = calibrated_confidence_from_proba(calibrated)
+    tier, conf_label = map_tier(calibrated, conf_score, artifacts.thresholds)
+
+    # Step 6: SHAP explanation — compute top-5 signal contributions.
+    # Uses TreeExplainer on the XGBoost model; positive contribution = MFA evidence.
+    top_signals = artifacts.shap_explainer.explain(features)
+
+    # Step 7: Render human-readable explanation using Jinja2 template.
+    # In MVP, this step is replaced by LLM generation (Bedrock Claude Haiku).
+    explanation = render_explanation(tier, top_signals)
+
+    return ClassificationOutput(
+        tier=tier,
+        mfa_score=round(calibrated, 4),
+        confidence=conf_label,
+        top_signals=top_signals,
+        explanation=explanation,
+        evidence_hash=evidence_hash,  # audit chain maintained
+        classifier="xgboost",
+        schema_version="v1.1",
+    )</code></pre>
+
+<h3>9.2 Signal Schema — <code>backend/src/mfa/schemas/signals.py</code></h3>
+<p>The <code>SignalFeatures</code> and <code>SignalSnapshotPayload</code> models define the canonical data contract for all crawl-extracted signals. The <code>compute_evidence_hash()</code> function at the bottom of the module is used by every component that needs to bind an audit event to a specific evidence snapshot.</p>
+<pre><code># ── SignalFeatures: all 16 v1.1 crawl features ───────────────────────────
+class SignalFeatures(BaseModel):
+    """DOM and content-heuristic features extracted by the crawl pipeline.
+    
+    Null conventions: null = signal not applicable or not measured;
+    0/0.0 = measured zero. Never use 0 as a placeholder for missing data.
+    """
+    model_config = ConfigDict(extra="forbid")  # no undeclared features accepted
+
+    ad_to_content_ratio:        float | None = Field(default=None, ge=0.0, le=1.0)
+    ads_above_fold:             int   | None = Field(default=None, ge=0)
+    # ... (all 16 features — see docs/SIGNALS.md for full schema)
+    refresh_events_60s:         int   | None = Field(
+        default=None, ge=0,
+        description="Refresh count during dwell; null when dwell not measured",
+    )
+    content_uniqueness_score:   float | None = Field(default=None, ge=0.0, le=1.0)
+    author_page_exists:         bool  | None = None
+
+# ── SignalSnapshotPayload: canonical JSONB document ───────────────────────
+class SignalSnapshotPayload(BaseModel):
+    """Canonical JSONB document stored in signal_snapshots.signals column."""
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: str = SIGNAL_SCHEMA_VERSION  # "v1.1"
+    crawl_ts:       datetime                       # ISO-8601 UTC
+    features:       SignalFeatures
+
+    def to_db(self) -> dict[str, Any]:
+        """Flatten for Postgres JSONB storage: features merged to top level."""
+        data = self.model_dump(mode="json")
+        features = data.pop("features")
+        data["schema_version"] = SIGNAL_SCHEMA_VERSION
+        data.update(features)   # flat JSONB: {schema_version, crawl_ts, ad_to_content_ratio, ...}
+        return data
+
+    @classmethod
+    def from_db(cls, data: dict[str, Any]) -> "SignalSnapshotPayload":
+        """Reconstruct from flat Postgres JSONB row back to nested Pydantic model."""
+        known = set(CRAWL_FEATURE_NAMES)
+        features = {key: data[key] for key in known if key in data}
+        return cls(
+            schema_version=data.get("schema_version", SIGNAL_SCHEMA_VERSION),
+            crawl_ts=data["crawl_ts"],
+            features=SignalFeatures.model_validate(features),
+        )
+
+# ── Evidence hash: binds every audit event to exact signal evidence ────────
+def compute_evidence_hash(signals: dict[str, Any]) -> str:
+    """SHA-256 of canonical JSON for audit binding.
+    
+    sort_keys=True ensures determinism regardless of dict insertion order.
+    separators=(",",":") eliminates whitespace for minimal canonical form.
+    Used to: cache RAG responses, bind audit events, verify data integrity.
+    """
+    canonical = json.dumps(signals, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()</code></pre>
+
+<h3>9.3 RAG Service — <code>backend/src/mfa/rag/service.py</code></h3>
+<p>The <code>answer_query()</code> function orchestrates the full RAG pipeline. It enforces the retrieve-first guardrail, manages the evidence_hash-keyed response cache, validates citations, and writes an immutable audit event for every query.</p>
+<pre><code>async def answer_query(
+    session: AsyncSession,
+    request: ChatRequest,        # { query, url_id?, domain? }
+    *,
+    actor_id: str = "anonymous",
+) -> RAGResponse:
+    """Orchestrate the full RAG pipeline for a chat query.
+    
+    Pipeline: sanitise → intent → retrieve → [cache check] → 
+              ground → validate citations → [cache store] → audit
+    """
+    # Step 1: Input sanitisation — blocks injection attacks.
+    # Raises ValueError on detected injection patterns.
+    query = sanitize_query(request.query)
+
+    # Step 2: Intent classification — determines retrieval path.
+    # why_mfa → SQL; signal_attribution → SHAP SQL; change_detection → version diff
+    intent = classify_intent(query)
+
+    # Step 3: Evidence retrieval — hybrid SQL + OpenSearch k-NN.
+    # Always retrieve before any LLM call (retrieve-first guardrail).
+    chunks = await retrieve_evidence(
+        session, intent=intent, query=query,
+        url_id=parsed_url_id, domain=request.domain,
+    )
+
+    # Step 4: Resolve evidence_hash from retrieved chunks.
+    # Used for: response caching, audit event binding.
+    evidence_hash = _resolve_evidence_hash(chunks)
+
+    # Step 5: Cache check — if we've answered this exact evidence state before,
+    # return the cached response immediately without LLM invocation.
+    cache = get_rag_cache()
+    if evidence_hash:
+        cached = cache.get(evidence_hash)
+        if cached:
+            return RAGResponse.model_validate(cached)
+
+    # Step 6: Build grounded response — LLM receives evidence pack ONLY.
+    # ADR-001 guardrail: no open-web access; no invented policy rules.
+    response = build_grounded_response(chunks, query)
+
+    # Step 7: Citation validation — every claim must cite a chunk in the pack.
+    # Raises if any citation ID is not in the retrieved evidence.
+    response = validate_citations(response, chunks)
+
+    # Step 8: Cache store (24h TTL, keyed by evidence_hash).
+    if evidence_hash:
+        cache.set(evidence_hash, response.model_dump(mode="json"))
+
+    # Step 9: Write immutable audit event — every RAG query is audited.
+    await write_audit_event(
+        session,
+        entity_type="rag_query",
+        entity_id=str(uuid.uuid4()),
+        action="rag.answer",
+        actor_id=actor_id,
+        evidence_hash=evidence_hash,   # binds audit event to evidence
+        payload={
+            "query": query[:200],
+            "intent": intent,
+            "confidence": response.confidence,
+            "recommended_action": response.recommended_action,
+            "citation_ids": [c.id for c in response.citations],
+        },
+    )
+
+    return response</code></pre>
+
+<h3>9.4 API Surface — All Implemented Endpoints</h3>
+<table>
+  <thead><tr><th>Method</th><th>Path</th><th>Purpose</th><th>Auth Role Required</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>POST</td><td><code>/api/v1/urls</code></td><td>Submit URL(s) for scoring — returns job_id immediately, crawl is async</td><td>ad_ops, admin</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/jobs/{job_id}</code></td><td>Crawl job status polling</td><td>ad_ops, reviewer, read_only</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/signals/{url_id}</code></td><td>Signal snapshots — versioned, paginated with limit/offset</td><td>ad_ops, reviewer, auditor, read_only</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/classifications</code></td><td>List latest classifications — filter by tier, domain, confidence</td><td>ad_ops, reviewer, read_only</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/classifications/{url_id}</code></td><td>Latest classification for a specific URL</td><td>ad_ops, reviewer, read_only</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/classifications/{url_id}/history</code></td><td>Paginated classification history — useful for change detection</td><td>ad_ops, reviewer, auditor</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/reviews/queue</code></td><td>HITL review queue — filter by tier, spend threshold, confidence</td><td>reviewer, admin</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>POST</td><td><code>/api/v1/reviews</code></td><td>Reviewer override — mandatory reason code, final_label stored alongside ML score</td><td>reviewer, admin</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>POST</td><td><code>/api/v1/chat</code></td><td>RAG bot query — returns RAGResponse with citations and recommended_action</td><td>ad_ops, reviewer, auditor</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/blocklist</code></td><td>Export blocklist segment — filter by tier, confidence threshold</td><td>ad_ops, admin</td><td><span class="badge badge-green">✅ Implemented</span></td></tr>
+    <tr><td>GET</td><td><code>/api/v1/prebid/lookup</code></td><td>Pre-bid domain cache lookup (&lt;200ms, Redis-only) — Production stub</td><td>ad_ops, admin</td><td><span class="badge badge-yellow">Stub (Production)</span></td></tr>
+  </tbody>
+</table>
+
+<h3>9.5 Evidence Hash — Audit Binding</h3>
+<p>The <code>compute_evidence_hash()</code> function is the linchpin of the platform's audit and integrity model. Its design ensures that any mutation of signal data — however subtle — produces a different hash, making tampered evidence detectable.</p>
+<pre><code>def compute_evidence_hash(signals: dict[str, Any]) -> str:
+    """SHA-256 of canonical JSON for audit binding.
+    
+    Canonical JSON guarantees:
+    - sort_keys=True: key order is irrelevant; same data always same hash
+    - separators=(",",":"): no whitespace; byte-for-byte deterministic
+    - default=str: datetime and UUID values serialised consistently
+    
+    Usage chain:
+    1. crawler/: compute_evidence_hash(signals) → stored with signal_snapshot row
+    2. ml/worker: pass evidence_hash to classify_snapshot() → stored on ClassificationOutput
+    3. rag/service: resolve evidence_hash from retrieved chunks → cache key + audit event
+    4. audit/writer: evidence_hash field on every AuditEvent record
+    
+    This means any audit event can be traced back to its exact signal snapshot,
+    and any modification to the signals after the fact is detectable.
+    """
+    canonical = json.dumps(
+        signals,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,    # handles datetime, UUID, Decimal
+    )
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()</code></pre>
+
+<div class="done-box">
+  <strong>Codebase summary (POC-5 exit, 2026-07-10):</strong>
+  <ul>
+    <li>11 FastAPI endpoints fully implemented with Pydantic models and OpenAPI documentation</li>
+    <li>Complete ML pipeline: rules engine + XGBoost artifacts (v1) + calibrator + SHAP + Jinja2 explanations</li>
+    <li>Signal schema v1.1 with 16 features; <code>SignalFeatures</code>, <code>SignalSnapshotPayload</code>, <code>compute_evidence_hash()</code></li>
+    <li>RAG service: <code>answer_query()</code> wired to sanitiser + intent classifier + retriever + citation validator</li>
+    <li>RAG schemas: <code>ChatRequest</code>, <code>RAGResponse</code>, <code>EvidenceChunk</code>, <code>Citation</code></li>
+    <li>Audit writer: <code>write_audit_event()</code> on every classification, RAG query, and reviewer override</li>
+    <li>RBAC: <code>require_role()</code> with 5 roles (admin, reviewer, ad_ops, auditor, read_only)</li>
+    <li>615 gold-labelled URLs in <code>data/seed/</code>; batch eval report in <code>ml/artifacts/v1/batch_eval_report.json</code></li>
+    <li>Docker Compose: full crawl → score → classifications path wired (POC-4)</li>
+    <li>End-to-end demo runnable standalone: <code>python submission/demo/end_to_end_demo.py</code></li>
+  </ul>
+</div>
+</section>
+
+<hr class="section-divider">
+<div style="text-align:center;padding:2rem 0 1rem;color:#6b7280;font-size:0.85rem;">
+  <strong style="color:#1e3a5f;">MFA Detection Platform — Lead Architect Submission</strong><br>
+  July 2026 · Baseline/POC Complete · MVP In Progress<br>
+  <code style="font-size:0.8rem;">submission/report.html</code> · <code style="font-size:0.8rem;">submission/slides.md</code> · <code style="font-size:0.8rem;">submission/demo/end_to_end_demo.py</code>
+</div>
+
+</body>
+</html>

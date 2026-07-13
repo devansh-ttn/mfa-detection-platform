@@ -62,7 +62,7 @@ def classify_snapshot(
             explanation=render_explanation(rule_match.tier, rule_match.top_signals),
             evidence_hash=evidence_hash,
             classifier="rules",
-            schema_version="v1",
+            schema_version="v1.1",
         )
 
     raw_proba = float(artifacts.classifier.predict_proba([features])[0])
@@ -87,5 +87,5 @@ def classify_snapshot(
         explanation=explanation,
         evidence_hash=evidence_hash,
         classifier="xgboost",
-        schema_version="v1",
+        schema_version="v1.1",
     )

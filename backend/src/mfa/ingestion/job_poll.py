@@ -37,7 +37,28 @@ logger = structlog.get_logger(__name__)
 
 # These error types will never self-resolve; skip any queued job for the same URL
 # whose created_at is older than the permanent failure's updated_at.
-_PERMANENT_ERROR_TYPES: tuple[str, ...] = ("not_found", "invalid_url", "robots_denied")
+_PERMANENT_ERROR_TYPES: tuple[str, ...] = (
+    "not_found",
+    "unreachable",
+    "invalid_url",
+    "robots_denied",
+)
+
+
+async def claim_crawl_job_by_id(session: AsyncSession, job_id: uuid.UUID) -> CrawlJob | None:
+    """Claim a specific queued crawl job (SQS consumer path)."""
+    job = await session.scalar(
+        select(CrawlJob)
+        .where(CrawlJob.id == job_id)
+        .where(CrawlJob.status == "queued")
+        .with_for_update(skip_locked=True)
+    )
+    if job is None:
+        return None
+    job.status = "running"
+    await session.flush()
+    logger.info("crawl_job_claimed", job_id=str(job.id), url_id=str(job.url_id), source="sqs")
+    return job
 
 
 async def claim_next_crawl_job(session: AsyncSession) -> CrawlJob | None:

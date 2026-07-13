@@ -1,42 +1,42 @@
 {
-  "evaluated_at": "2026-07-08T14:28:15.346926+00:00",
-  "artifact_dir": "ml/artifacts/v1",
-  "n_val": 61,
+  "eval_mode": "model_all_crawled",
+  "n_evaluated": 179,
+  "n_total_candidates": 179,
   "val_distribution": {
-    "MFA": 12,
-    "Non_MFA": 49
+    "MFA": 33,
+    "Non_MFA": 146
   },
   "confusion_matrix": {
-    "tp": 0,
-    "fp": 3,
-    "fn": 12,
-    "tn": 46
+    "tp": 19,
+    "fp": 86,
+    "fn": 14,
+    "tn": 60
   },
-  "precision": 0.0,
-  "recall": 0.0,
-  "f1": 0.0,
+  "precision": 0.181,
+  "recall": 0.5758,
+  "f1": 0.2754,
   "tier_breakdown": {
-    "Uncertain": {
-      "MFA": 4,
-      "Non_MFA": 22
+    "MFA_High": {
+      "MFA": 19,
+      "Non_MFA": 71
     },
     "Non_MFA": {
-      "MFA": 8,
-      "Non_MFA": 24
-    },
-    "MFA_High": {
-      "MFA": 0,
-      "Non_MFA": 1
+      "MFA": 14,
+      "Non_MFA": 60
     },
     "MFA_Medium": {
       "MFA": 0,
-      "Non_MFA": 2
+      "Non_MFA": 15
     }
   },
   "poc_targets": {
     "precision_target": 0.85,
     "recall_target": 0.7,
     "precision_met": false,
-    "recall_met": false
-  }
+    "recall_met": false,
+    "meets_targets": false
+  },
+  "evaluated_at": "2026-07-10T20:58:03.905956+00:00",
+  "artifact_dir": "/Users/devanshkumar/Workspaces/ttn/mfa-detection-platform/ml/artifacts/v1",
+  "n_samples_with_snapshots": 179
 }

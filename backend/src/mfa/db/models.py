@@ -123,6 +123,29 @@ class Classification(Base):
     url: Mapped["Url"] = relationship(back_populates="classifications")
 
 
+class ReviewOverride(Base):
+    __tablename__ = "review_overrides"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    url_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("urls.id"), nullable=False, index=True
+    )
+    classification_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("classifications.id"), nullable=False, index=True
+    )
+    final_label: Mapped[str] = mapped_column(String(32), nullable=False)
+    override_reason: Mapped[str] = mapped_column(String(64), nullable=False)
+    reviewer_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ml_tier: Mapped[str] = mapped_column(String(32), nullable=False)
+    ml_mfa_score: Mapped[float] = mapped_column(nullable=False)
+    evidence_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    url: Mapped["Url"] = relationship()
+    classification: Mapped["Classification"] = relationship()
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

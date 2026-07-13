@@ -13,7 +13,14 @@ import uuid
 from datetime import datetime
 
 from mfa_ml.scoring.output import ClassificationOutput, SignalContribution, Tier
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
+
+from mfa.schemas.openapi_examples import (
+    CLASSIFICATION_HISTORY_RESPONSE,
+    CLASSIFICATION_INDEX_ITEM,
+    CLASSIFICATION_INDEX_RESPONSE,
+    CLASSIFICATION_RESPONSE,
+)
 
 __all__ = [
     "ClassificationOutput",
@@ -21,11 +28,15 @@ __all__ = [
     "Tier",
     "ClassificationResponse",
     "ClassificationListResponse",
+    "ClassificationIndexItem",
+    "ClassificationIndexResponse",
 ]
 
 
 class ClassificationResponse(BaseModel):
     """HTTP response shape for a single classification record."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CLASSIFICATION_RESPONSE]})
 
     classification_id: uuid.UUID
     url_id: uuid.UUID
@@ -68,8 +79,30 @@ class ClassificationResponse(BaseModel):
 class ClassificationListResponse(BaseModel):
     """Paginated classification history for a URL."""
 
+    model_config = ConfigDict(json_schema_extra={"examples": [CLASSIFICATION_HISTORY_RESPONSE]})
+
     url_id: uuid.UUID
     classifications: list[ClassificationResponse]
+    total: int
+    limit: int
+    offset: int
+
+
+class ClassificationIndexItem(ClassificationResponse):
+    """Classification with URL metadata for list/search endpoints."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CLASSIFICATION_INDEX_ITEM]})
+
+    url: str = Field(..., description="Original submitted URL")
+    domain: str = Field(..., description="Normalized domain")
+
+
+class ClassificationIndexResponse(BaseModel):
+    """Paginated list of latest classifications across URLs."""
+
+    model_config = ConfigDict(json_schema_extra={"examples": [CLASSIFICATION_INDEX_RESPONSE]})
+
+    classifications: list[ClassificationIndexItem]
     total: int
     limit: int
     offset: int

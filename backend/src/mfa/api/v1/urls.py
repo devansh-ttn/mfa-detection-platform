@@ -9,6 +9,7 @@ from mfa.core.errors import MFAError, NotFoundError
 from mfa.db.models import CrawlJob, Url
 from mfa.db.session import get_db_session
 from mfa.ingestion.service import IngestionService
+from mfa.schemas.errors import COMMON_ERROR_RESPONSES
 from mfa.schemas.urls import (
     IngestedJobResponse,
     JobResponse,
@@ -23,7 +24,12 @@ def get_ingestion_service() -> IngestionService:
     return IngestionService()
 
 
-@router.post("/urls", response_model=UrlSubmitResponse, status_code=202)
+@router.post(
+    "/urls",
+    response_model=UrlSubmitResponse,
+    status_code=202,
+    responses=COMMON_ERROR_RESPONSES,
+)
 async def submit_urls(
     body: UrlSubmitRequest,
     session: AsyncSession = Depends(get_db_session),
@@ -57,7 +63,11 @@ async def submit_urls(
     )
 
 
-@router.get("/jobs", response_model=list[JobResponse])
+@router.get(
+    "/jobs",
+    response_model=list[JobResponse],
+    responses=COMMON_ERROR_RESPONSES,
+)
 async def list_jobs(
     session: AsyncSession = Depends(get_db_session),
     status: str | None = Query(default=None, description="Filter by job status"),
@@ -98,7 +108,11 @@ async def list_jobs(
     return result
 
 
-@router.get("/jobs/{job_id}", response_model=JobResponse)
+@router.get(
+    "/jobs/{job_id}",
+    response_model=JobResponse,
+    responses=COMMON_ERROR_RESPONSES,
+)
 async def get_job(
     job_id: uuid.UUID,
     session: AsyncSession = Depends(get_db_session),

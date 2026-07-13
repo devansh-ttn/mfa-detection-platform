@@ -4,16 +4,19 @@ overview: End-to-end architecture for an AI-enabled MFA (Made-For-Advertising) d
 todos:
   - id: validate-data
     content: Confirm gold-label URL dataset and DSP inventory feed access with Ad Ops
-    status: pending
+    status: completed
   - id: crawler-spike
-    content: "POC spike: dual-persona crawler on 100 known MFA/non-MFA domains measuring ad density and refresh"
-    status: pending
+    content: "POC spike: single-persona crawler on 100 domains (dual-persona deferred to MVP-1.4)"
+    status: completed
   - id: feature-schema
-    content: Finalize signal feature schema (~40-60 features) and Postgres JSONB store design
-    status: pending
+    content: Baseline signal schema v1 + Postgres JSONB (MVP expands to 40-60 features)
+    status: completed
   - id: ml-poc
-    content: Train rules + XGBoost ensemble on labeled set; target precision >=85%, recall >=70%
-    status: pending
+    content: Train rules + XGBoost; metrics gap documented — remediate in MVP-2.1
+    status: completed
+  - id: poc-5-exit
+    content: "POC-5 exit — batch eval, list APIs, reviewer CSV, OpenAPI polish"
+    status: completed
   - id: rag-v1
     content: Implement RAG bot v1 with hybrid SQL + OpenSearch retrieval and citation validator
     status: pending
@@ -592,10 +595,20 @@ flowchart LR
 
 ---
 
-## 11. Recommended Next Steps (post-approval)
+## 11. Recommended Next Steps (updated 2026-07-10)
 
-1. Validate gold-label dataset availability (2K+ reviewed URLs minimum for POC).
-2. Spike dual-persona crawler on 100 known MFA / non-MFA domains.
-3. Define policy taxonomy and reviewer reason codes.
-4. Stand up AWS sandbox with Postgres + S3 + single crawler worker.
-5. Build RAG bot against static signal JSON before live crawl integration.
+**Current (POC-5 exit):** See [`docs/plans/2026-07-10-poc-5-exit.md`](../../docs/plans/2026-07-10-poc-5-exit.md)
+
+1. Complete POC-5.1–5.5 — API polish, full gold-label batch eval, reviewer CSV export.
+2. Pass POC exit checklist (metrics gap documented; ≥90% crawl success).
+3. Ad Ops sign-off on sample explanations.
+
+**MVP kickoff:** [`docs/plans/2026-08-mvp-execution.md`](../../docs/plans/2026-08-mvp-execution.md)
+
+4. Terraform sandbox (RDS, S3, SQS) + dual-persona crawler (MVP-1).
+5. LLM explanations + RAG v1 + review console (MVP-2 → MVP-4).
+6. Shadow-mode pilot before blocklist export (MVP-5).
+
+**Production:** [`docs/plans/2026-11-production-execution.md`](../../docs/plans/2026-11-production-execution.md)
+
+**Multi-agent execution:** [`.cursor/plans/multi-agent-execution-plan.md`](multi-agent-execution-plan.md)

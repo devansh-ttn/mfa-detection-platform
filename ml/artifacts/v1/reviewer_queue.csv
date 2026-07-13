@@ -1,0 +1,28 @@
+url,domain,tier,mfa_score,confidence,top_signals,explanation,evidence_hash
+https://denverpost.com/politics/,denverpost.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":0.31459904903154173,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 0.31459904903154173
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",f53a08f1cfc44128280ce839b87946fb77ceb888912d31c64387290d24c99c6f
+https://denverpost.com/,denverpost.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":4,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 4  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",2aea58cd04cdafcd056d4299df8bc27f6ffd7556bde8b377830c1b726c673582
+https://denverpost.com/world/,denverpost.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",8d000939a614d8a23b2e11080a2ea55ef04366f53d3062e1c3190a55752d0340
+https://espn.com/nfl/,espn.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",0fcdc427c19c79a8495a7e6b8241a02a3240ff4205dd4396e46a29e3367c5c9f
+https://theguardian.com/,theguardian.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":0.2610875181232923,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 0.2610875181232923
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",ec6394b407314dc51984b5e75d20e44c3d02b3920833dbc593a0edb579922f09
+https://chicagotribune.com/politics/,chicagotribune.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":4,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 4  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",e3f7dd2120aeeb0251917697a5555838c7e5e23a3957bf35b149f53860e2516d
+https://chicagotribune.com/world/,chicagotribune.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":0.4216592971252986,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 0.4216592971252986
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",ca50f92b7f271256dcdc03d0eae543959bfcd0160e3f56134d441b43591f2738
+https://espn.com/nba/,espn.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",f4128bbc3553a69c60ad4f65894f4744032406a23ff27db3d4c233465fc794a1
+https://espn.com/,espn.com,MFA_Medium,0.68,high,"[{""rank"":1,""value"":3,""feature"":""ads_above_fold"",""contribution"":0.45},{""rank"":2,""value"":1.0,""feature"":""ad_to_content_ratio"",""contribution"":0.35}]","This page shows elevated MFA risk signals that warrant human review.
+Key evidence:  • Ads Above Fold: 3  • Ad To Content Ratio: 1.0
+The ad layout and content patterns are consistent with MFA practices but do not meet the threshold for automatic blocking. A human reviewer should inspect this placement.",16642d36576294b2edb82efaa804d6db21ac3dd843f69fab88b0821ebf6e1d1c

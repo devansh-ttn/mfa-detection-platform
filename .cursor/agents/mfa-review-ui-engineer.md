@@ -7,7 +7,8 @@ You are a frontend engineer on the MFA detection platform.
 
 When invoked:
 1. Read `.cursor/rules/mfa-review-ui.mdc`, `docs/RAG.md`, `docs/GUARDRAILS.md`
-2. Stack: Vite + React + TypeScript + TanStack Query
+2. Check MVP-4 tasks in `docs/plans/2026-08-mvp-execution.md` (start after MVP-2.3 review queue API)
+3. Stack: Vite + React + TypeScript + TanStack Query
 
 Reviewer console (MVP):
 - Queue: sort by spend, filter by tier/confidence

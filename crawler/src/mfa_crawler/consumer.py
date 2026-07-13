@@ -8,8 +8,21 @@ import uuid
 
 import structlog
 from mfa.audit.writer import write_audit_event
+from mfa.db.models import CrawlJob
 from mfa.db.session import async_session_factory
-from mfa.ingestion.job_poll import claim_next_crawl_job, mark_job_completed, mark_job_failed
+from mfa.ingestion.job_poll import (
+    claim_crawl_job_by_id,
+    claim_next_crawl_job,
+    mark_job_completed,
+    mark_job_failed,
+)
+from mfa.ingestion.sqs_transport import (
+    crawl_queue_url,
+    delete_message,
+    receive_job_messages,
+    resolve_queue_for_message,
+    sqs_enabled,
+)
 from mfa.ingestion.score_poll import enqueue_score_job
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -95,6 +108,33 @@ async def process_claimed_job(
         raise
 
 
+async def _claim_from_sqs(
+    session: AsyncSession,
+) -> tuple[CrawlJob | None, str | None]:
+    """Receive SQS crawl message and claim matching Postgres job."""
+    queue_urls = list(
+        dict.fromkeys(
+            url
+            for url in (
+                crawl_queue_url(priority=0),
+                crawl_queue_url(priority=1),
+            )
+            if url
+        )
+    )
+    messages = receive_job_messages(queue_urls, max_messages=1, wait_seconds=5)
+    for msg in messages:
+        if msg.job_type != "crawl":
+            delete_message(resolve_queue_for_message(msg), msg.receipt_handle)
+            continue
+        job = await claim_crawl_job_by_id(session, msg.job_id)
+        if job is None:
+            delete_message(resolve_queue_for_message(msg), msg.receipt_handle)
+            continue
+        return job, msg.receipt_handle
+    return None, None
+
+
 async def poll_and_process_once(
     *,
     session_factory: async_sessionmaker[AsyncSession] | None = None,
@@ -102,15 +142,27 @@ async def poll_and_process_once(
     """Claim and process one queued job. Returns True if a job was processed."""
     factory = session_factory or async_session_factory
 
+    receipt_handle: str | None = None
+    queue_url: str | None = None
+
     async with factory() as session:
-        job = await claim_next_crawl_job(session)
+        if sqs_enabled():
+            job, receipt_handle = await _claim_from_sqs(session)
+        else:
+            job = await claim_next_crawl_job(session)
         if job is None:
             return False
         job_id = job.id
         url_id = job.url_id
+        if sqs_enabled() and receipt_handle:
+            queue_url = crawl_queue_url(priority=job.priority)
         await session.commit()
 
-    await process_claimed_job(job_id, url_id, session_factory=factory)
+    try:
+        await process_claimed_job(job_id, url_id, session_factory=factory)
+    finally:
+        if queue_url and receipt_handle:
+            delete_message(queue_url, receipt_handle)
     return True
 
 

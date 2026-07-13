@@ -1,0 +1,33 @@
+{
+  "annotations": { "list": [] },
+  "title": "MFA Platform — Ops Dashboard (MVP-4.7)",
+  "uid": "mfa-ops-mvp",
+  "panels": [
+    {
+      "title": "Crawl jobs by status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "mfa_crawl_jobs_total", "legendFormat": "{{status}}" }]
+    },
+    {
+      "title": "Classifications by tier",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 8, "x": 6, "y": 0 },
+      "targets": [{ "expr": "mfa_classifications_total", "legendFormat": "{{tier}}" }]
+    },
+    {
+      "title": "RAG queries / hour",
+      "type": "graph",
+      "gridPos": { "h": 8, "w": 10, "x": 0, "y": 4 },
+      "targets": [{ "expr": "rate(mfa_rag_queries_total[1h])" }]
+    },
+    {
+      "title": "Review queue depth",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 14, "y": 0 },
+      "targets": [{ "expr": "mfa_review_queue_depth" }]
+    }
+  ],
+  "schemaVersion": 38,
+  "version": 1
+}

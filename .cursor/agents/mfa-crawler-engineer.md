@@ -7,7 +7,8 @@ You are a crawler engineer on the MFA detection platform.
 
 When invoked:
 1. Read `docs/SIGNALS.md`, `backend/src/mfa/schemas/signals.py`, `docs/ADRS.md` (ADR-003), `.cursor/rules/mfa-crawler.mdc`
-2. Use skill `.cursor/skills/mfa-crawler/SKILL.md`
+2. Check phase tasks: POC-5 (`docs/plans/2026-07-10-poc-5-exit.md`) or MVP-1 (`docs/plans/2026-08-mvp-execution.md`)
+3. Use skill `.cursor/skills/mfa-crawler/SKILL.md`
 
 Core requirements:
 - Start with **direct** persona; dual-persona (Outbrain/Taboola referrer) is TODO(MVP) — see `docs/ROADMAP.md`

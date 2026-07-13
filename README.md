@@ -4,14 +4,16 @@ AI-enabled **Made-For-Advertising (MFA)** detection platform with explainable cl
 
 ## Status
 
-**Baseline — POC-4 complete.** Ingestion, crawl, ML scoring, and classifications API are wired end-to-end via async workers.
+**Baseline exit complete (2026-07-10).** Full gold-label batch eval, list APIs, reviewer CSV, and live metrics documented.
 
 | Component | State | Details |
 |-----------|--------|---------|
-| `backend-api` | Live | Ingestion, jobs, signals, classifications API, audit writer |
-| `postgres` | Live | URLs, crawl jobs, score jobs, signal snapshots, classifications, audit events |
+| `backend-api` | Live | Ingestion, jobs, signals, classifications list + detail, audit writer |
+| `postgres` | Live | 616 URLs, 615 crawl jobs, 284 classifications (batch eval run) |
 | `crawler-worker` | Live | Postgres poll → crawl → `signal_snapshots` → enqueue `score_jobs` |
 | `ml-worker` | Live | Postgres poll → `classify_snapshot()` → `classifications` + audit |
+
+**Batch eval:** [`ml/artifacts/v1/batch_eval_report.json`](ml/artifacts/v1/batch_eval_report.json) · [`eval_notes.md`](ml/artifacts/v1/eval_notes.md)
 
 **Service guides:** [backend](backend/README.md) · [crawler](crawler/README.md) · [ml](ml/README.md) · [common](common/README.md)
 
@@ -34,8 +36,7 @@ POST /urls  -->  crawl_jobs  -->  crawler-worker  -->  signal_snapshots
                                               GET /classifications/{url_id}
 ```
 
-**Next milestone (POC-5):** List/filter APIs, batch eval report, reviewer CSV export, demo script.  
-**Frontend:** MVP only — review console starts at MVP-4.1 (see [Roadmap](#roadmap-milestones)).
+**Next milestone (MVP):** Dual-persona crawl, S3 artifacts, LLM explanations, RAG v1, review console — [`docs/plans/2026-08-mvp-execution.md`](docs/plans/2026-08-mvp-execution.md)
 
 ---
 
@@ -98,13 +99,15 @@ cp .env.example .env
 | `ARTIFACT_DIR` | `/artifacts` (ml-worker) | Mounted from `./ml/artifacts/v1` |
 | `SCORE_POLL_INTERVAL_SEC` | `5` | ML worker idle poll interval |
 
-### 2. Build and start core services
+### 2. Build and start the full stack
 
-Starts **Postgres** and the **backend API**. The API container runs Alembic migrations automatically on startup, then serves FastAPI on port 8000.
+Starts **Postgres**, **Redis**, **backend-api**, **crawler-worker**, and **ml-worker**. The API runs Alembic migrations on startup, then serves FastAPI on port 8000.
 
 ```bash
 docker compose build
 docker compose up -d
+# Batch eval — 3 parallel crawlers: ./scripts/dev/up-stack.sh
+# (set CRAWL_WORKER_REPLICAS=3 in .env)
 ```
 
 Check status:
@@ -113,7 +116,9 @@ Check status:
 docker compose ps
 ```
 
-Expected: `mfa-postgres` (healthy), `mfa-backend-api` (running).
+Expected: `mfa-postgres` and `mfa-redis` (healthy), `mfa-backend-api` (healthy), one or more `crawler-worker-*` replicas, `mfa-ml-worker` (running). See `docs/LOCAL_DEV_GUIDE.md` §6.3 to scale crawlers.
+
+Core only (no workers): `docker compose up -d postgres redis backend-api`
 
 ### 3. Verify the stack
 
@@ -124,16 +129,9 @@ curl -s http://localhost:8000/health/db | jq
 
 Open interactive API docs: **http://localhost:8000/docs**
 
-### 4. Start workers (crawl + score)
+The ML worker requires trained artifacts in `ml/artifacts/v1/` (mounted read-only at `/artifacts`). See `docs/LOCAL_DEV_GUIDE.md` §7.8 if `ml-worker` crash-loops.
 
-```bash
-docker compose --profile workers up -d --build
-docker compose --profile workers ps
-```
-
-Expected: `mfa-crawler-worker` and `mfa-ml-worker` running. The ML worker requires trained artifacts in `ml/artifacts/v1/` (mounted read-only at `/artifacts`).
-
-### 5. Full E2E smoke test (ingest → crawl → score → classification)
+### 4. Full E2E smoke test (ingest → crawl → score → classification)
 
 ```bash
 # Submit URL
@@ -199,7 +197,7 @@ Planned (POC-5 / MVP): list/filter endpoints, review overrides, RAG chat.
 |---------|-----------|------|------------|---------|--------|
 | `postgres` | `mfa-postgres` | 5432 | Official `postgres:16-alpine` | default | — |
 | `backend-api` | `mfa-backend-api` | 8000 | `backend/Dockerfile` | default | [backend/README.md](backend/README.md) |
-| `crawler-worker` | `mfa-crawler-worker` | — | `crawler/Dockerfile` | `workers` | [crawler/README.md](crawler/README.md) |
+| `crawler-worker` | `…-crawler-worker-{1..N}` (scalable) | — | `crawler/Dockerfile` | default | [crawler/README.md](crawler/README.md) |
 | `ml-worker` | `mfa-ml-worker` | — | `ml/Dockerfile` | `workers` | [ml/README.md](ml/README.md) |
 
 Python dependencies are installed with **uv** inside each image. The monorepo uses a single `uv.lock` at the repo root. Shared logging lives in [common/README.md](common/README.md).
@@ -214,8 +212,16 @@ docker compose logs -f crawler-worker ml-worker
 
 # Rebuild after code changes
 docker compose build backend-api
-docker compose --profile workers build ml-worker crawler-worker
-docker compose --profile workers up -d
+docker compose build ml-worker crawler-worker
+docker compose up -d
+
+# Per-service up/down (dependencies start automatically)
+docker compose up -d crawler-worker
+docker compose down crawler-worker
+
+# Multiple crawler workers (batch eval)
+CRAWL_WORKER_REPLICAS=3 docker compose up -d --scale crawler-worker=3
+./scripts/dev/up-stack.sh
 
 # Stop everything (keep database volume)
 docker compose down
